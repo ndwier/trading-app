@@ -413,8 +413,29 @@ def get_insider_buy_history(ticker):
             prices = [t['price'] for t in result if t['price']]
             avg_buy_price = sum(prices) / len(prices) if prices else None
             
-            # Get current price (would need yfinance here, placeholder for now)
-            current_price = None  # TODO: Fetch from yfinance
+            # Get current price and entry quality
+            from src.market_data import PriceService
+            price_service = PriceService()
+            
+            current_price_data = price_service.get_current_price(ticker)
+            current_price = current_price_data['current_price'] if current_price_data else None
+            
+            # Calculate potential return if we have both prices
+            potential_return = None
+            potential_return_pct = None
+            entry_quality = None
+            
+            if current_price and avg_buy_price:
+                potential_return = current_price - avg_buy_price
+                potential_return_pct = (potential_return / avg_buy_price) * 100
+                
+                # Get entry quality analysis
+                try:
+                    trade_list = [{'price': t['price'], 'date': t['date']} for t in result if t['price']]
+                    if trade_list:
+                        entry_quality = price_service.calculate_entry_quality(ticker, trade_list)
+                except:
+                    pass
             
             return jsonify({
                 'ticker': ticker,
@@ -423,7 +444,9 @@ def get_insider_buy_history(ticker):
                 'total_amount': sum([t['amount'] for t in result if t['amount']]),
                 'avg_buy_price': avg_buy_price,
                 'current_price': current_price,
-                'potential_return': None  # Would calculate if we had current price
+                'potential_return': potential_return,
+                'potential_return_pct': potential_return_pct,
+                'entry_quality': entry_quality
             })
             
     except Exception as e:
@@ -1498,6 +1521,126 @@ def check_alerts():
         result = check_and_send_alerts()
         
         return jsonify(result)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================================================
+# MARKET DATA / PRICE ENDPOINTS
+# ============================================================================
+
+@app.route('/api/price/<ticker>')
+def get_price(ticker):
+    """Get current price and basic info for a ticker."""
+    try:
+        from src.market_data import PriceService
+        
+        service = PriceService()
+        data = service.get_current_price(ticker.upper())
+        
+        if not data:
+            return jsonify({'error': 'Could not fetch price data'}), 404
+        
+        return jsonify(data)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/price/<ticker>/history')
+def get_price_history(ticker):
+    """Get price history with insider trade markers."""
+    try:
+        from src.market_data import PriceService
+        
+        period = request.args.get('period', '1y')
+        
+        # Get insider trades for this ticker
+        with get_session() as session:
+            trades = session.query(Trade).filter(
+                Trade.ticker == ticker.upper()
+            ).order_by(Trade.trade_date.desc()).limit(50).all()
+            
+            trade_list = []
+            for t in trades:
+                trade_list.append({
+                    'date': t.trade_date,
+                    'type': t.transaction_type.value if hasattr(t.transaction_type, 'value') else str(t.transaction_type),
+                    'price': float(t.price_per_share) if t.price_per_share else None,
+                    'amount': float(t.amount_usd) if t.amount_usd else 0,
+                    'insider': t.filer.name if t.filer else 'Unknown'
+                })
+        
+        service = PriceService()
+        data = service.get_price_history_with_trades(ticker.upper(), trade_list, period)
+        
+        return jsonify(data)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/price/<ticker>/entry_quality')
+def get_entry_quality(ticker):
+    """Get entry quality analysis based on insider trades."""
+    try:
+        from src.market_data import PriceService
+        from src.database.models import TransactionType
+        
+        # Get insider BUY trades for this ticker
+        with get_session() as session:
+            buy_trades = session.query(Trade).filter(
+                Trade.ticker == ticker.upper(),
+                Trade.transaction_type.in_([TransactionType.BUY, TransactionType.OPTION_BUY])
+            ).order_by(Trade.trade_date.desc()).limit(20).all()
+            
+            trade_list = []
+            for t in buy_trades:
+                if t.price_per_share:
+                    trade_list.append({
+                        'date': t.trade_date,
+                        'price': float(t.price_per_share),
+                        'amount': float(t.amount_usd) if t.amount_usd else 0,
+                        'insider': t.filer.name if t.filer else 'Unknown'
+                    })
+        
+        if not trade_list:
+            return jsonify({'error': 'No insider buy trades found for this ticker'}), 404
+        
+        service = PriceService()
+        data = service.calculate_entry_quality(ticker.upper(), trade_list)
+        
+        return jsonify(data)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/price/batch', methods=['POST'])
+def get_batch_prices():
+    """Get prices for multiple tickers."""
+    try:
+        from src.market_data import PriceService
+        
+        data = request.get_json()
+        tickers = data.get('tickers', [])
+        
+        if not tickers:
+            return jsonify({'error': 'No tickers provided'}), 400
+        
+        service = PriceService()
+        results = service.get_batch_prices([t.upper() for t in tickers])
+        
+        return jsonify(results)
         
     except Exception as e:
         import traceback
