@@ -180,7 +180,7 @@
         </div>
     </div>
 
-    <!-- Details Modal -->
+    <!-- Signal Details Modal -->
     <div id="detailsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
          background: rgba(0,0,0,0.8); z-index: 9999; align-items: center; justify-content: center;
          padding: 2rem; overflow-y: auto;" onclick="if(event.target === this) closeModal()">
@@ -196,6 +196,25 @@
                         onmouseout="this.style.background='none'; this.style.color='var(--text-secondary)'">×</button>
             </div>
             <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <!-- Insider Profile Modal -->
+    <div id="insiderModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+         background: rgba(0,0,0,0.8); z-index: 9999; align-items: center; justify-content: center;
+         padding: 2rem; overflow-y: auto;" onclick="if(event.target === this) closeInsiderModal()">
+        <div style="background: var(--bg-secondary); border-radius: 16px; padding: 2rem; 
+             max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; 
+             border: 1px solid var(--border-color); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0; font-size: 1.5rem;">👤 Insider Profile</h2>
+                <button onclick="closeInsiderModal()" style="background: none; border: none; color: var(--text-secondary); 
+                        font-size: 2rem; cursor: pointer; padding: 0; width: 40px; height: 40px; 
+                        display: flex; align-items: center; justify-content: center; border-radius: 8px; 
+                        transition: all 0.2s;" onmouseover="this.style.background='var(--bg-card)'; this.style.color='var(--text-primary)'" 
+                        onmouseout="this.style.background='none'; this.style.color='var(--text-secondary)'">×</button>
+            </div>
+            <div id="insiderModalContent"></div>
         </div>
     </div>
 
@@ -313,7 +332,7 @@
                 </div>
 
                 <div class="insider-list">
-                    <div class="insider-list-title">🏢 Top Insiders (hover for details)</div>
+                    <div class="insider-list-title">🏢 Top Insiders (hover for details, click for full profile)</div>
                     <div class="insider-tags">
                         ${signal.insiders && signal.insiders.length > 0 
                             ? signal.insiders.slice(0, 5).map(name => 
@@ -321,7 +340,9 @@
                                       data-insider="${name}" 
                                       onmouseenter="showInsiderTooltip(event, '${name.replace(/'/g, "\\'")}')"
                                       onmouseleave="hideInsiderTooltip()"
-                                      title="Click to view full profile">${name.slice(0, 20)}${name.length > 20 ? '...' : ''}</span>`
+                                      onclick="showInsiderModal('${name.replace(/'/g, "\\'")}')"
+                                      style="cursor: pointer;"
+                                      title="Hover for quick info, click for full profile">${name.slice(0, 20)}${name.length > 20 ? '...' : ''}</span>`
                               ).join('')
                             : '<span class="insider-tag">No names available</span>'}
                     </div>
@@ -487,6 +508,112 @@
 
         function closeModal() {
             document.getElementById('detailsModal').style.display = 'none';
+        }
+
+        // Insider modal functions
+        async function showInsiderModal(name) {
+            const modal = document.getElementById('insiderModal');
+            const content = document.getElementById('insiderModalContent');
+            
+            modal.style.display = 'flex';
+            content.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+            
+            try {
+                const response = await fetch(`/api/insider_info/${encodeURIComponent(name)}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    content.innerHTML = `<div style="color: var(--accent-red);">${data.error}</div>`;
+                    return;
+                }
+                
+                // Render full insider profile
+                content.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 2rem;">
+                        <h1 style="margin: 0 0 0.5rem 0; font-size: 2rem; color: var(--text-primary);">
+                            ${data.name}
+                        </h1>
+                        <div style="color: var(--accent-blue); font-size: 1.2rem; margin-bottom: 1rem;">
+                            ${data.role}
+                        </div>
+                        ${data.party ? `<span style="background: var(--bg-card); padding: 0.5rem 1rem; border-radius: 8px; color: var(--text-secondary);">${data.party}${data.state ? ' - ' + data.state : ''}</span>` : ''}
+                    </div>
+                    
+                    <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
+                        <h3 style="margin: 0 0 1rem 0; color: var(--accent-blue);">💡 Why This Matters</h3>
+                        <div style="line-height: 1.8; color: var(--text-secondary);">
+                            ${data.significance}
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent-green);">${data.total_trades}</div>
+                            <div style="color: var(--text-secondary); margin-top: 0.5rem;">Total Trades</div>
+                        </div>
+                        <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent-blue);">${data.unique_tickers}</div>
+                            <div style="color: var(--text-secondary); margin-top: 0.5rem;">Unique Tickers</div>
+                        </div>
+                        <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent-green);">${data.buy_trades}</div>
+                            <div style="color: var(--text-secondary); margin-top: 0.5rem;">Buy Trades</div>
+                        </div>
+                        <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent-red);">${data.sell_trades}</div>
+                            <div style="color: var(--text-secondary); margin-top: 0.5rem;">Sell Trades</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px;">
+                            <div style="color: var(--text-secondary); margin-bottom: 0.5rem;">Total Bought</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent-green);">${formatCurrency(data.total_bought)}</div>
+                        </div>
+                        <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px;">
+                            <div style="color: var(--text-secondary); margin-bottom: 0.5rem;">Total Sold</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent-red);">${formatCurrency(data.total_sold)}</div>
+                        </div>
+                    </div>
+                    
+                    ${data.favorite_tickers && data.favorite_tickers.length > 0 ? `
+                        <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                            <h3 style="margin: 0 0 1rem 0; color: var(--accent-blue);">📊 Favorite Tickers</h3>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                ${data.favorite_tickers.map(ticker => 
+                                    `<span style="background: var(--bg-secondary); padding: 0.5rem 1rem; border-radius: 8px; color: var(--accent-blue); font-weight: 600;">${ticker}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${data.recent_trades && data.recent_trades.length > 0 ? `
+                        <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px;">
+                            <h3 style="margin: 0 0 1rem 0; color: var(--accent-blue);">📅 Recent Activity</h3>
+                            <div style="display: grid; gap: 0.75rem;">
+                                ${data.recent_trades.slice(0, 10).map(trade => {
+                                    const typeColor = trade.type === 'BUY' ? 'var(--accent-green)' : 'var(--accent-red)';
+                                    return `
+                                        <div style="display: flex; justify-content: space-between; padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+                                            <span style="color: var(--text-primary); font-weight: 600;">${trade.ticker || 'N/A'}</span>
+                                            <span style="color: ${typeColor}; font-weight: 600;">${trade.type}</span>
+                                            <span style="color: var(--text-secondary);">${trade.date}</span>
+                                            <span style="color: var(--text-primary);">${trade.amount ? formatCurrency(trade.amount) : 'N/A'}</span>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+            } catch (error) {
+                console.error('Error loading insider profile:', error);
+                content.innerHTML = `<div style="color: var(--accent-red);">Failed to load profile</div>`;
+            }
+        }
+
+        function closeInsiderModal() {
+            document.getElementById('insiderModal').style.display = 'none';
         }
 
         // Add to watchlist (placeholder)
