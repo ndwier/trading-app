@@ -469,18 +469,37 @@ def get_insider_info(name):
                 logger.error(f"Enrichment failed for {filer.name}: {e}")
                 enriched = {}
             
-            # Build bio/description
+            # Build bio/description - NEVER show generic types
+            # Helper to check if value is meaningful (not None, not "Unknown", not empty)
+            def is_meaningful(val):
+                return val and val not in ['Unknown', 'N/A', 'None', '']
+            
             role_parts = []
-            if filer.title:
+            if is_meaningful(filer.title):
                 role_parts.append(filer.title)
-            if filer.position:
+            if is_meaningful(filer.position):
                 role_parts.append(filer.position)
-            if filer.chamber:
+            if is_meaningful(filer.chamber):
                 role_parts.append(f"{filer.chamber}")
-            if filer.party:
+            if is_meaningful(filer.party):
                 role_parts.append(f"({filer.party})")
             
-            role = " ".join(role_parts) if role_parts else filer.filer_type.value
+            # Smart fallback for role
+            if role_parts:
+                role = " ".join(role_parts)
+            else:
+                # Use descriptive role based on type and data
+                if filer.filer_type.value == 'politician':
+                    role = "Political Insider"
+                elif filer.filer_type.value == 'corporate_insider':
+                    if filer.company:
+                        role = f"{filer.company} Executive"
+                    else:
+                        role = "Corporate Executive"
+                elif filer.filer_type.value == 'institutional_investor':
+                    role = "Institutional Fund Manager"
+                else:
+                    role = filer.filer_type.value.replace('_', ' ').title()
             
             # Use enriched data if available
             bio = enriched.get('bio')
@@ -488,18 +507,102 @@ def get_insider_info(name):
             leadership = enriched.get('leadership')
             significance = enriched.get('why_matters')
             
-            # Fallback to generic if enrichment failed
-            if not significance:
-                significance = f"{filer.name} is a {role}"
+            # Generate useful bio if Wikipedia failed
+            if not bio:
+                bio_parts = [f"{filer.name} is a"]
                 
                 if filer.filer_type.value == 'politician':
-                    significance += " with direct influence on policy and legislation. Politician trades often precede significant regulatory changes."
+                    if is_meaningful(filer.chamber) and is_meaningful(filer.state):
+                        bio_parts.append(f"{filer.chamber} member representing {filer.state}")
+                    elif is_meaningful(filer.chamber):
+                        bio_parts.append(f"{filer.chamber} member")
+                    elif is_meaningful(filer.state):
+                        bio_parts.append(f"politician from {filer.state}")
+                    else:
+                        bio_parts.append("political insider")
+                    
+                    if is_meaningful(filer.party):
+                        bio_parts.append(f"affiliated with the {filer.party}")
+                    
+                    bio_parts.append(f"with {len(trades)} recorded trades")
+                    
                 elif filer.filer_type.value == 'corporate_insider':
-                    significance += " with insider knowledge of company operations, upcoming products, and financial performance."
-                elif filer.filer_type.value == 'institutional_investor':
-                    significance += " managing billions in assets. Their moves often signal major market shifts."
+                    if filer.company:
+                        bio_parts.append(f"corporate insider at {filer.company}")
+                    else:
+                        bio_parts.append("corporate executive")
+                    
+                    if filer.title:
+                        bio_parts.append(f"serving as {filer.title}")
+                    
+                    bio_parts.append(f"with {len(trades)} disclosed transactions")
+                    
                 else:
-                    significance += ". Their trading patterns may indicate valuable market insights."
+                    bio_parts.append(f"{filer.filer_type.value.replace('_', ' ')}")
+                    bio_parts.append(f"with {len(trades)} tracked trades")
+                
+                # Add top holdings
+                if tickers:
+                    if len(tickers) <= 3:
+                        bio_parts.append(f". Primary holdings: {', '.join(tickers)}")
+                    else:
+                        bio_parts.append(f". Trades {len(tickers)} stocks including {', '.join(tickers[:3])}")
+                
+                bio = " ".join(bio_parts) + "."
+            
+            # Generate smart significance even without Wikipedia
+            if not significance:
+                # Build significance from trading data
+                sig_parts = []
+                
+                if filer.filer_type.value == 'politician':
+                    sig_parts.append(f"{filer.name} is a political insider")
+                    if is_meaningful(filer.party):
+                        sig_parts.append(f"({filer.party})")
+                    if is_meaningful(filer.chamber):
+                        sig_parts.append(f"in the {filer.chamber}")
+                elif filer.filer_type.value == 'corporate_insider':
+                    sig_parts.append(f"{filer.name} is a corporate insider")
+                    if is_meaningful(filer.company):
+                        sig_parts.append(f"at {filer.company}")
+                else:
+                    sig_parts.append(f"{filer.name} is a {filer.filer_type.value.replace('_', ' ')}")
+                
+                significance = " ".join(sig_parts) + ". "
+                
+                # Add trading pattern insights
+                if len(trades) > 10:
+                    significance += f"Highly active trader with {len(trades)} recorded transactions. "
+                elif len(trades) > 5:
+                    significance += f"Active trader with {len(trades)} transactions. "
+                
+                # Add ticker insights
+                if len(tickers) == 1:
+                    significance += f"Exclusively trades {tickers[0]}. "
+                elif len(tickers) <= 3:
+                    significance += f"Focuses on {', '.join(tickers[:3])}. "
+                else:
+                    significance += f"Trades {len(tickers)} different stocks including {', '.join(tickers[:3])}. "
+                
+                # Add buy/sell pattern
+                if len(buy_trades) > 0 and len(sell_trades) == 0:
+                    significance += "Only buying (no recorded sales) suggests strong conviction. "
+                elif len(sell_trades) > len(buy_trades) * 3:
+                    significance += "Heavy selling activity may indicate profit-taking or portfolio rebalancing. "
+                
+                # Add volume context
+                if total_bought > 1000000:
+                    significance += f"Large purchase volume (${total_bought:,.0f}) indicates significant conviction. "
+                elif total_sold > 1000000:
+                    significance += f"Large sale volume (${total_sold:,.0f}) may signal important portfolio changes. "
+                
+                # Add context based on role
+                if filer.filer_type.value == 'politician':
+                    significance += "Political insider trades often precede regulatory changes, committee actions, or policy shifts that could affect specific industries."
+                elif filer.filer_type.value == 'corporate_insider':
+                    significance += "Corporate insiders have access to non-public information about company performance, products, and strategic decisions."
+                else:
+                    significance += "Their trades may reflect privileged access to market-moving information."
             
             # Recent activity summary
             if buy_trades:
