@@ -34,7 +34,19 @@
 
     <!-- Main Container -->
     <div class="container">
-        <!-- Filters -->
+        <!-- Tabs -->
+        <div style="display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 2px solid var(--border-color);">
+            <button class="tab-btn active" onclick="showTab('signals')" id="signalsTab">
+                📊 Signals
+            </button>
+            <button class="tab-btn" onclick="showTab('query')" id="queryTab">
+                🔍 Query Builder
+            </button>
+        </div>
+
+        <!-- Signals Tab -->
+        <div id="signalsContent">
+            <!-- Filters -->
         <div class="filters">
             <div class="filter-grid">
                 <div class="filter-group">
@@ -85,10 +97,85 @@
             </div>
         </div>
 
-        <!-- Signals Grid -->
-        <div id="signalsContainer">
-            <div class="loading">
-                <div class="spinner"></div>
+            <!-- Signals Grid -->
+            <div id="signalsContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Query Builder Tab -->
+        <div id="queryContent" style="display: none;">
+            <div class="filters">
+                <h3 style="margin: 0 0 1rem 0; color: var(--text-primary);">🔍 Custom Trade Query Builder</h3>
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label class="filter-label">Ticker (optional)</label>
+                        <input type="text" class="filter-input" id="queryTicker" placeholder="e.g. NVDA">
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Start Date</label>
+                        <input type="date" class="filter-input" id="queryStartDate">
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">End Date</label>
+                        <input type="date" class="filter-input" id="queryEndDate">
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Min Amount ($)</label>
+                        <input type="number" class="filter-input" id="queryMinAmount" placeholder="e.g. 100000">
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Max Amount ($)</label>
+                        <input type="number" class="filter-input" id="queryMaxAmount" placeholder="e.g. 5000000">
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Transaction Type</label>
+                        <select class="filter-select" id="queryTxType">
+                            <option value="">All Types</option>
+                            <option value="BUY">Buy</option>
+                            <option value="SELL">Sell</option>
+                            <option value="OPTION_EXERCISE">Option Exercise</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Filer Type</label>
+                        <select class="filter-select" id="queryFilerType">
+                            <option value="">All Types</option>
+                            <option value="POLITICIAN">Politician</option>
+                            <option value="CORPORATE_INSIDER">Corporate Insider</option>
+                            <option value="INSTITUTIONAL_INVESTOR">Institutional</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Results Limit</label>
+                        <select class="filter-select" id="queryLimit">
+                            <option value="50">50 results</option>
+                            <option value="100" selected>100 results</option>
+                            <option value="200">200 results</option>
+                            <option value="500">500 results</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+                    <button class="btn btn-primary" onclick="runCustomQuery()">
+                        🔍 Run Query
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportQueryResults()">
+                        📥 Export Results
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearQueryFilters()">
+                        🔄 Clear Filters
+                    </button>
+                </div>
+            </div>
+
+            <!-- Query Results -->
+            <div id="queryResults" style="margin-top: 2rem;">
+                <div style="text-align: center; padding: 4rem 2rem; color: var(--text-secondary);">
+                    Configure your filters and click "Run Query" to see results
+                </div>
             </div>
         </div>
     </div>
@@ -517,6 +604,167 @@
             tooltipTimeout = setTimeout(() => {
                 document.getElementById('insiderTooltip').style.display = 'none';
             }, 200);
+        }
+
+        // Tab switching
+        function showTab(tab) {
+            const signalsTab = document.getElementById('signalsTab');
+            const queryTab = document.getElementById('queryTab');
+            const signalsContent = document.getElementById('signalsContent');
+            const queryContent = document.getElementById('queryContent');
+
+            if (tab === 'signals') {
+                signalsTab.classList.add('active');
+                queryTab.classList.remove('active');
+                signalsContent.style.display = 'block';
+                queryContent.style.display = 'none';
+            } else {
+                signalsTab.classList.remove('active');
+                queryTab.classList.add('active');
+                signalsContent.style.display = 'none';
+                queryContent.style.display = 'block';
+                
+                // Set default dates
+                if (!document.getElementById('queryEndDate').value) {
+                    const today = new Date().toISOString().split('T')[0];
+                    const ninetyDaysAgo = new Date(Date.now() - 90*24*60*60*1000).toISOString().split('T')[0];
+                    document.getElementById('queryEndDate').value = today;
+                    document.getElementById('queryStartDate').value = ninetyDaysAgo;
+                }
+            }
+        }
+
+        // Query builder functions
+        let queryResultsData = [];
+
+        async function runCustomQuery() {
+            const resultsDiv = document.getElementById('queryResults');
+            resultsDiv.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+            const filters = {
+                ticker: document.getElementById('queryTicker').value.toUpperCase() || null,
+                start_date: document.getElementById('queryStartDate').value || null,
+                end_date: document.getElementById('queryEndDate').value || null,
+                min_amount: parseFloat(document.getElementById('queryMinAmount').value) || null,
+                max_amount: parseFloat(document.getElementById('queryMaxAmount').value) || null,
+                transaction_type: document.getElementById('queryTxType').value || null,
+                filer_type: document.getElementById('queryFilerType').value || null,
+                limit: parseInt(document.getElementById('queryLimit').value) || 100
+            };
+
+            // Remove null values
+            Object.keys(filters).forEach(key => {
+                if (filters[key] === null) delete filters[key];
+            });
+
+            try {
+                const response = await fetch('/api/query/trades', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(filters)
+                });
+                const data = await response.json();
+
+                queryResultsData = data.trades || [];
+
+                if (queryResultsData.length === 0) {
+                    resultsDiv.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <div class="empty-title">No results found</div>
+                            <div class="empty-text">Try adjusting your filters</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Render table
+                let tableHTML = `
+                    <div style="margin-bottom: 1rem; color: var(--text-primary);">
+                        <strong>${data.count}</strong> trades found
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="query-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Ticker</th>
+                                    <th>Insider</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                queryResultsData.forEach(trade => {
+                    const typeColor = trade.type === 'BUY' ? 'var(--accent-green)' : 'var(--accent-red)';
+                    tableHTML += `
+                        <tr>
+                            <td>${trade.date}</td>
+                            <td style="font-weight: 600; color: var(--accent-blue);">${trade.ticker || 'N/A'}</td>
+                            <td>${trade.insider || 'Unknown'}</td>
+                            <td style="color: ${typeColor}; font-weight: 600;">${trade.type}</td>
+                            <td>${trade.amount ? formatCurrency(trade.amount) : 'N/A'}</td>
+                            <td>${trade.price ? '$' + trade.price.toFixed(2) : 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+
+                tableHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                resultsDiv.innerHTML = tableHTML;
+
+            } catch (error) {
+                console.error('Error running query:', error);
+                resultsDiv.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">⚠️</div>
+                        <div class="empty-title">Error running query</div>
+                        <div class="empty-text">${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+
+        function exportQueryResults() {
+            if (queryResultsData.length === 0) {
+                alert('No results to export. Run a query first.');
+                return;
+            }
+
+            let csv = 'Date,Ticker,Insider,Type,Amount,Price\n';
+            queryResultsData.forEach(trade => {
+                csv += `${trade.date},${trade.ticker || 'N/A'},${trade.insider || 'Unknown'},${trade.type},"${formatCurrency(trade.amount || 0)}","${trade.price ? '$' + trade.price.toFixed(2) : 'N/A'}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `trade-query-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        }
+
+        function clearQueryFilters() {
+            document.getElementById('queryTicker').value = '';
+            document.getElementById('queryStartDate').value = '';
+            document.getElementById('queryEndDate').value = '';
+            document.getElementById('queryMinAmount').value = '';
+            document.getElementById('queryMaxAmount').value = '';
+            document.getElementById('queryTxType').value = '';
+            document.getElementById('queryFilerType').value = '';
+            document.getElementById('queryLimit').value = '100';
+            document.getElementById('queryResults').innerHTML = `
+                <div style="text-align: center; padding: 4rem 2rem; color: var(--text-secondary);">
+                    Configure your filters and click "Run Query" to see results
+                </div>
+            `;
         }
 
         // Initialize
