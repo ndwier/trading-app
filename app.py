@@ -284,7 +284,7 @@ def get_enhanced_signals():
             # Get signals
             signals = query.order_by(desc(Signal.strength)).limit(limit).all()
             
-            # Enrich with additional data
+            # Enrich with additional data and apply filters
             result = []
             for sig in signals:
                 # Get trades for this ticker
@@ -306,11 +306,50 @@ def get_enhanced_signals():
                     if t.transaction_type.value == 'BUY':
                         buy_trades.append(t)
                 
+                # Get market cap if available
+                market_cap_value = None
+                market_cap_category = 'unknown'
+                try:
+                    import yfinance as yf
+                    ticker_obj = yf.Ticker(sig.ticker)
+                    info = ticker_obj.info
+                    market_cap_value = info.get('marketCap', 0)
+                    
+                    # Categorize market cap
+                    if market_cap_value > 200_000_000_000:
+                        market_cap_category = 'mega'
+                    elif market_cap_value > 10_000_000_000:
+                        market_cap_category = 'large'
+                    elif market_cap_value > 2_000_000_000:
+                        market_cap_category = 'mid'
+                    elif market_cap_value > 300_000_000:
+                        market_cap_category = 'small'
+                    else:
+                        market_cap_category = 'micro'
+                except:
+                    pass
+                
+                # Apply market cap filter
+                if market_cap != 'all' and market_cap != market_cap_category:
+                    continue
+                
+                # Adjust strength based on risk tolerance
+                adjusted_strength = float(sig.strength) * 100
+                if risk_tolerance == 'conservative':
+                    # Only show very high confidence signals
+                    if adjusted_strength < 80:
+                        continue
+                elif risk_tolerance == 'aggressive':
+                    # Show lower confidence signals too
+                    adjusted_strength = min(100, adjusted_strength * 1.1)  # Boost by 10%
+                
                 result.append({
                     'ticker': sig.ticker,
                     'signal_type': sig.signal_type.value,
-                    'strength': float(sig.strength) * 100,
+                    'strength': adjusted_strength,
                     'reasoning': sig.reasoning,
+                    'market_cap': market_cap_value,
+                    'market_cap_category': market_cap_category,
                     
                     # Enhanced data
                     'num_trades': len(trades),
@@ -359,10 +398,11 @@ def get_insider_buy_history(ticker):
             
             result = []
             for trade in trades:
+                role = trade.filer.title or trade.filer.position or 'Insider' if trade.filer else 'Unknown'
                 result.append({
                     'date': trade.trade_date.isoformat(),
                     'insider_name': trade.filer.name if trade.filer else 'Unknown',
-                    'insider_role': trade.filer.office if trade.filer and hasattr(trade.filer, 'office') else 'N/A',
+                    'insider_role': role,
                     'price': float(trade.price) if trade.price else None,
                     'quantity': float(trade.quantity) if trade.quantity else None,
                     'amount': float(trade.amount_usd) if trade.amount_usd else None,
@@ -417,7 +457,17 @@ def get_insider_info(name):
             tickers = list(set([t.ticker for t in trades if t.ticker]))
             
             # Build bio/description
-            role = filer.office or filer.filer_type.value
+            role_parts = []
+            if filer.title:
+                role_parts.append(filer.title)
+            if filer.position:
+                role_parts.append(filer.position)
+            if filer.chamber:
+                role_parts.append(f"{filer.chamber}")
+            if filer.party:
+                role_parts.append(f"({filer.party})")
+            
+            role = " ".join(role_parts) if role_parts else filer.filer_type.value
             significance = f"{filer.name} is a {role}"
             
             if filer.filer_type.value == 'POLITICIAN':
@@ -440,8 +490,10 @@ def get_insider_info(name):
                 'name': filer.name,
                 'role': role,
                 'filer_type': filer.filer_type.value,
-                'office': filer.office,
-                'district': filer.district,
+                'title': filer.title,
+                'position': filer.position,
+                'chamber': filer.chamber,
+                'state': filer.state,
                 'party': filer.party,
                 'significance': significance,
                 'total_trades': len(trades),
