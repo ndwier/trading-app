@@ -4,6 +4,44 @@
 
 ---
 
+## 🏦 BROKERAGE APIs (For Order Execution) - OPTIONAL
+
+These are for automated trade execution. Set up when you're ready to connect to your brokerage.
+
+### Schwab Trader API
+- **Sign Up**: https://developer.schwab.com/
+- **Cost**: FREE
+- **Steps**:
+  1. Create a developer account
+  2. Register a new app
+  3. Get your App Key and App Secret
+  4. Set up OAuth2 callback URL (default: `https://localhost:8080/callback`)
+- **Add to `.env`**:
+  ```
+  SCHWAB_APP_KEY=your_app_key
+  SCHWAB_APP_SECRET=your_app_secret
+  SCHWAB_REDIRECT_URI=https://localhost:8080/callback
+  ```
+- **Documentation**: https://developer.schwab.com/products/trader-api
+
+### E*TRADE API
+- **Sign Up**: https://developer.etrade.com/
+- **Cost**: FREE (sandbox available)
+- **Steps**:
+  1. Create a developer account
+  2. Request API access
+  3. Create an app to get Consumer Key and Secret
+  4. Test in sandbox mode first
+- **Add to `.env`**:
+  ```
+  ETRADE_CONSUMER_KEY=your_consumer_key
+  ETRADE_CONSUMER_SECRET=your_consumer_secret
+  ETRADE_SANDBOX=true
+  ```
+- **Documentation**: https://developer.etrade.com/getting-started
+
+---
+
 ## 🔑 REQUIRED: Free API Keys (30 Minutes Total)
 
 These will unlock additional data sources and features:
