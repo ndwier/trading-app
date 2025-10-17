@@ -528,15 +528,21 @@
                 }
                 
                 // Render full insider profile
+                const displayRole = data.role && data.role !== 'Unknown' ? data.role : data.filer_type || 'Insider';
+                const badges = [];
+                if (data.party && data.party !== 'null') badges.push(data.party);
+                if (data.state && data.state !== 'null') badges.push(data.state);
+                if (data.chamber && data.chamber !== 'Unknown' && data.chamber !== 'null') badges.push(data.chamber);
+                
                 content.innerHTML = `
                     <div style="text-align: center; margin-bottom: 2rem;">
                         <h1 style="margin: 0 0 0.5rem 0; font-size: 2rem; color: var(--text-primary);">
-                            ${data.name}
+                            ${data.name || 'Unknown Insider'}
                         </h1>
                         <div style="color: var(--accent-blue); font-size: 1.2rem; margin-bottom: 1rem;">
-                            ${data.role}
+                            ${displayRole}
                         </div>
-                        ${data.party ? `<span style="background: var(--bg-card); padding: 0.5rem 1rem; border-radius: 8px; color: var(--text-secondary);">${data.party}${data.state ? ' - ' + data.state : ''}</span>` : ''}
+                        ${badges.length > 0 ? `<span style="background: var(--bg-card); padding: 0.5rem 1rem; border-radius: 8px; color: var(--text-secondary);">${badges.join(' • ')}</span>` : ''}
                     </div>
                     
                     <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
@@ -548,19 +554,19 @@
                     
                     <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
                         <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; text-align: center;">
-                            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent-green);">${data.total_trades}</div>
+                            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent-green);">${data.total_trades || 0}</div>
                             <div style="color: var(--text-secondary); margin-top: 0.5rem;">Total Trades</div>
                         </div>
                         <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; text-align: center;">
-                            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent-blue);">${data.unique_tickers}</div>
+                            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent-blue);">${data.unique_tickers || 0}</div>
                             <div style="color: var(--text-secondary); margin-top: 0.5rem;">Unique Tickers</div>
                         </div>
                         <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; text-align: center;">
-                            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent-green);">${data.buy_trades}</div>
+                            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent-green);">${data.buy_trades || 0}</div>
                             <div style="color: var(--text-secondary); margin-top: 0.5rem;">Buy Trades</div>
                         </div>
                         <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; text-align: center;">
-                            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent-red);">${data.sell_trades}</div>
+                            <div style="font-size: 2.5rem; font-weight: 700; color: var(--accent-red);">${data.sell_trades || 0}</div>
                             <div style="color: var(--text-secondary); margin-top: 0.5rem;">Sell Trades</div>
                         </div>
                     </div>

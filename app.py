@@ -303,7 +303,7 @@ def get_enhanced_signals():
                         unique_insiders.add(t.filer.name)
                     if t.amount_usd:
                         total_amount += float(t.amount_usd)
-                    if t.transaction_type.value == 'BUY':
+                    if t.transaction_type.value.lower() in ['buy', 'option_buy']:
                         buy_trades.append(t)
                 
                 # Get market cap if available
@@ -447,8 +447,8 @@ def get_insider_info(name):
                 .order_by(Trade.trade_date.desc()).limit(50).all()
             
             # Calculate stats
-            buy_trades = [t for t in trades if t.transaction_type.value == 'BUY']
-            sell_trades = [t for t in trades if t.transaction_type.value == 'SELL']
+            buy_trades = [t for t in trades if t.transaction_type.value.lower() in ['buy', 'option_buy']]
+            sell_trades = [t for t in trades if t.transaction_type.value.lower() in ['sell', 'option_sell']]
             
             total_bought = sum([float(t.amount_usd or 0) for t in buy_trades])
             total_sold = sum([float(t.amount_usd or 0) for t in sell_trades])
