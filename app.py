@@ -43,6 +43,12 @@ def index():
     return render_template('dashboard.html')
 
 
+@app.route('/premium')
+def premium_dashboard():
+    """Premium trading dashboard."""
+    return render_template('premium.html')
+
+
 @app.route('/api/trades')
 def get_trades():
     """API endpoint to get recent trades."""
@@ -378,6 +384,82 @@ def get_insider_buy_history(ticker):
                 'avg_buy_price': avg_buy_price,
                 'current_price': current_price,
                 'potential_return': None  # Would calculate if we had current price
+            })
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/insider_info/<name>')
+def get_insider_info(name):
+    """Get detailed info about an insider with their trading history."""
+    try:
+        with get_session() as session:
+            filer = session.query(Filer).filter(Filer.name.ilike(f'%{name}%')).first()
+            
+            if not filer:
+                return jsonify({'error': 'Insider not found'}), 404
+            
+            # Get all trades by this insider
+            trades = session.query(Trade).filter(Trade.filer_id == filer.filer_id)\
+                .order_by(Trade.trade_date.desc()).limit(50).all()
+            
+            # Calculate stats
+            buy_trades = [t for t in trades if t.transaction_type.value == 'BUY']
+            sell_trades = [t for t in trades if t.transaction_type.value == 'SELL']
+            
+            total_bought = sum([float(t.amount_usd or 0) for t in buy_trades])
+            total_sold = sum([float(t.amount_usd or 0) for t in sell_trades])
+            
+            # Get unique tickers
+            tickers = list(set([t.ticker for t in trades if t.ticker]))
+            
+            # Build bio/description
+            role = filer.office or filer.filer_type.value
+            significance = f"{filer.name} is a {role}"
+            
+            if filer.filer_type.value == 'POLITICIAN':
+                significance += " with direct influence on policy and legislation. Politician trades often precede significant regulatory changes."
+            elif filer.filer_type.value == 'CORPORATE_INSIDER':
+                significance += " with insider knowledge of company operations, upcoming products, and financial performance."
+            elif filer.filer_type.value == 'INSTITUTIONAL_INVESTOR':
+                significance += " managing billions in assets. Their moves often signal major market shifts."
+            else:
+                significance += ". Their trading patterns may indicate valuable market insights."
+            
+            # Recent activity summary
+            if buy_trades:
+                recent_buys = sorted(buy_trades, key=lambda t: t.trade_date, reverse=True)[:3]
+                recent_tickers = [t.ticker for t in recent_buys if t.ticker]
+                if recent_tickers:
+                    significance += f" Recently bought: {', '.join(recent_tickers[:3])}."
+            
+            return jsonify({
+                'name': filer.name,
+                'role': role,
+                'filer_type': filer.filer_type.value,
+                'office': filer.office,
+                'district': filer.district,
+                'party': filer.party,
+                'significance': significance,
+                'total_trades': len(trades),
+                'buy_trades': len(buy_trades),
+                'sell_trades': len(sell_trades),
+                'total_bought': total_bought,
+                'total_sold': total_sold,
+                'unique_tickers': len(tickers),
+                'favorite_tickers': tickers[:5],
+                'recent_trades': [
+                    {
+                        'ticker': t.ticker,
+                        'type': t.transaction_type.value,
+                        'date': t.trade_date.isoformat(),
+                        'amount': float(t.amount_usd) if t.amount_usd else None
+                    }
+                    for t in trades[:10]
+                ]
             })
             
     except Exception as e:

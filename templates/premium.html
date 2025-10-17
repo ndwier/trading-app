@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insider Trading Intelligence Platform</title>
+    <link rel="stylesheet" href="/static/css/premium.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                📊 Insider Intelligence
+            </div>
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-label">Total Trades</div>
+                    <div class="stat-value" id="totalTrades">-</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Active Signals</div>
+                    <div class="stat-value" id="activeSignals">-</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Total Volume</div>
+                    <div class="stat-value" id="totalVolume">$-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Filters -->
+        <div class="filters">
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label class="filter-label">Risk Tolerance</label>
+                    <select class="filter-select" id="riskTolerance">
+                        <option value="conservative">Conservative</option>
+                        <option value="moderate" selected>Moderate</option>
+                        <option value="aggressive">Aggressive</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Market Cap</label>
+                    <select class="filter-select" id="marketCap">
+                        <option value="all" selected>All Caps</option>
+                        <option value="mega">Mega Cap (>$200B)</option>
+                        <option value="large">Large Cap ($10-200B)</option>
+                        <option value="mid">Mid Cap ($2-10B)</option>
+                        <option value="small">Small Cap ($300M-$2B)</option>
+                        <option value="micro">Micro Cap (<$300M)</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Min Confidence</label>
+                    <select class="filter-select" id="minConfidence">
+                        <option value="0">All (0%)</option>
+                        <option value="50">Above 50%</option>
+                        <option value="75">Above 75%</option>
+                        <option value="90">Above 90%</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Results Limit</label>
+                    <select class="filter-select" id="resultsLimit">
+                        <option value="10">10 signals</option>
+                        <option value="25">25 signals</option>
+                        <option value="50" selected>50 signals</option>
+                        <option value="100">100 signals</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+                <button class="btn btn-primary" onclick="loadSignals()">
+                    🔄 Refresh Signals
+                </button>
+                <button class="btn btn-secondary" onclick="exportToCSV()">
+                    📥 Export to CSV
+                </button>
+            </div>
+        </div>
+
+        <!-- Signals Grid -->
+        <div id="signalsContainer">
+            <div class="loading">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global data
+        let allSignals = [];
+
+        // Format currency
+        function formatCurrency(value) {
+            if (!value) return '$0';
+            if (value >= 1e9) return '$' + (value / 1e9).toFixed(2) + 'B';
+            if (value >= 1e6) return '$' + (value / 1e6).toFixed(2) + 'M';
+            if (value >= 1e3) return '$' + (value / 1e3).toFixed(2) + 'K';
+            return '$' + value.toFixed(2);
+        }
+
+        // Load stats
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                document.getElementById('totalTrades').textContent = 
+                    (data.total_trades || 0).toLocaleString();
+                document.getElementById('totalVolume').textContent = 
+                    formatCurrency(data.total_volume || 0);
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Load signals
+        async function loadSignals() {
+            const container = document.getElementById('signalsContainer');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+            try {
+                const risk = document.getElementById('riskTolerance').value;
+                const marketCap = document.getElementById('marketCap').value;
+                const minConf = document.getElementById('minConfidence').value;
+                const limit = document.getElementById('resultsLimit').value;
+
+                const url = `/api/signals/enhanced?risk=${risk}&market_cap=${marketCap}&min_confidence=${minConf}&limit=${limit}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                allSignals = data.signals || [];
+                
+                // Update stats
+                document.getElementById('activeSignals').textContent = allSignals.length;
+
+                if (allSignals.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <div class="empty-title">No signals found</div>
+                            <div class="empty-text">Try adjusting your filters or check back later</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Render signals
+                container.innerHTML = '<div class="signals-grid" id="signalsGrid"></div>';
+                const grid = document.getElementById('signalsGrid');
+
+                allSignals.forEach((signal, index) => {
+                    const card = createSignalCard(signal, index);
+                    grid.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error('Error loading signals:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">⚠️</div>
+                        <div class="empty-title">Error loading signals</div>
+                        <div class="empty-text">${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Create signal card
+        function createSignalCard(signal, index) {
+            const card = document.createElement('div');
+            card.className = 'signal-card';
+            card.style.animationDelay = `${index * 0.05}s`;
+
+            card.innerHTML = `
+                <div class="signal-header">
+                    <div class="ticker">${signal.ticker}</div>
+                    <div class="strength-badge">${signal.strength.toFixed(0)}%</div>
+                </div>
+                
+                <span class="signal-type ${signal.signal_type}">${signal.signal_type}</span>
+                
+                <div class="insider-info">
+                    <div class="info-item">
+                        <span class="info-label">Total Trades</span>
+                        <span class="info-value highlight">${signal.num_trades || 0}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Unique Insiders</span>
+                        <span class="info-value highlight">${signal.num_insiders || 0}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Total Volume</span>
+                        <span class="info-value">${formatCurrency(signal.total_volume || 0)}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Buy Trades</span>
+                        <span class="info-value">${signal.num_buys || 0}</span>
+                    </div>
+                </div>
+
+                <div class="insider-list">
+                    <div class="insider-list-title">🏢 Top Insiders (hover for details)</div>
+                    <div class="insider-tags">
+                        ${signal.insiders && signal.insiders.length > 0 
+                            ? signal.insiders.slice(0, 5).map(name => 
+                                `<span class="insider-tag insider-hover" 
+                                      data-insider="${name}" 
+                                      onmouseenter="showInsiderTooltip(event, '${name.replace(/'/g, "\\'")}')"
+                                      onmouseleave="hideInsiderTooltip()"
+                                      title="Click to view full profile">${name.slice(0, 20)}${name.length > 20 ? '...' : ''}</span>`
+                              ).join('')
+                            : '<span class="insider-tag">No names available</span>'}
+                    </div>
+                </div>
+                
+                <!-- Insider Tooltip -->
+                <div id="insiderTooltip" style="display:none; position: fixed; background: var(--bg-secondary); 
+                     border: 1px solid var(--accent-blue); border-radius: 8px; padding: 1rem; 
+                     box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 10000; max-width: 350px;
+                     pointer-events: none;">
+                    <div id="tooltipContent"></div>
+                </div>
+
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                    <div style="font-size: 0.875rem; color: var(--text-secondary); line-height: 1.6;">
+                        ${signal.reasoning || 'Pattern detected based on insider activity'}
+                    </div>
+                </div>
+
+                <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                    <button class="btn btn-primary" style="flex: 1; font-size: 0.875rem;" 
+                            onclick="viewDetails('${signal.ticker}')">
+                        📊 View Details
+                    </button>
+                    <button class="btn btn-secondary" style="flex: 1; font-size: 0.875rem;"
+                            onclick="addToWatchlist('${signal.ticker}')">
+                        ⭐ Watchlist
+                    </button>
+                </div>
+            `;
+
+            return card;
+        }
+
+        // View details
+        function viewDetails(ticker) {
+            window.open(`/api/insider_buys/${ticker}`, '_blank');
+        }
+
+        // Add to watchlist (placeholder)
+        function addToWatchlist(ticker) {
+            alert(`✅ ${ticker} added to watchlist!\n(Feature coming soon)`);
+        }
+
+        // Export to CSV
+        function exportToCSV() {
+            if (allSignals.length === 0) {
+                alert('No signals to export');
+                return;
+            }
+
+            let csv = 'Ticker,Signal Type,Strength,Num Trades,Num Insiders,Total Volume,Reasoning\n';
+            
+            allSignals.forEach(signal => {
+                csv += `${signal.ticker},${signal.signal_type},${signal.strength},${signal.num_trades || 0},${signal.num_insiders || 0},"${formatCurrency(signal.total_volume || 0)}","${(signal.reasoning || '').replace(/"/g, '""')}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `insider-signals-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        }
+
+        // Auto-refresh
+        function startAutoRefresh() {
+            setInterval(() => {
+                console.log('Auto-refreshing signals...');
+                loadSignals();
+            }, 60000); // Every minute
+        }
+
+        // Insider tooltip functions
+        let tooltipTimeout = null;
+        let insiderCache = {};
+
+        async function showInsiderTooltip(event, name) {
+            clearTimeout(tooltipTimeout);
+            
+            const tooltip = document.getElementById('insiderTooltip');
+            const content = document.getElementById('tooltipContent');
+            
+            // Position tooltip near cursor
+            tooltip.style.left = event.pageX + 15 + 'px';
+            tooltip.style.top = event.pageY + 15 + 'px';
+            tooltip.style.display = 'block';
+            
+            // Show loading state
+            content.innerHTML = '<div style="color: var(--text-secondary);">Loading...</div>';
+            
+            // Fetch insider info (with caching)
+            if (insiderCache[name]) {
+                displayInsiderInfo(insiderCache[name]);
+            } else {
+                try {
+                    const response = await fetch(`/api/insider_info/${encodeURIComponent(name)}`);
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        content.innerHTML = `<div style="color: var(--accent-red);">Info not available</div>`;
+                    } else {
+                        insiderCache[name] = data;
+                        displayInsiderInfo(data);
+                    }
+                } catch (error) {
+                    content.innerHTML = `<div style="color: var(--accent-red);">Failed to load</div>`;
+                }
+            }
+        }
+
+        function displayInsiderInfo(data) {
+            const content = document.getElementById('tooltipContent');
+            content.innerHTML = `
+                <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem; color: var(--text-primary);">
+                    ${data.name}
+                </div>
+                <div style="color: var(--accent-blue); font-size: 0.875rem; margin-bottom: 0.75rem;">
+                    ${data.role}
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 0.75rem;">
+                    ${data.significance}
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.8rem;">
+                    <div>
+                        <div style="color: var(--text-secondary);">Buy Trades</div>
+                        <div style="color: var(--accent-green); font-weight: 600;">${data.buy_trades}</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-secondary);">Sell Trades</div>
+                        <div style="color: var(--accent-red); font-weight: 600;">${data.sell_trades}</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-secondary);">Total Bought</div>
+                        <div style="color: var(--text-primary); font-weight: 600;">${formatCurrency(data.total_bought)}</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-secondary);">Unique Tickers</div>
+                        <div style="color: var(--text-primary); font-weight: 600;">${data.unique_tickers}</div>
+                    </div>
+                </div>
+                ${data.favorite_tickers && data.favorite_tickers.length > 0 ? `
+                    <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
+                        <div style="color: var(--text-secondary); font-size: 0.75rem; margin-bottom: 0.25rem;">FAVORITE TICKERS</div>
+                        <div style="font-size: 0.85rem; color: var(--accent-blue);">${data.favorite_tickers.join(', ')}</div>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        function hideInsiderTooltip() {
+            tooltipTimeout = setTimeout(() => {
+                document.getElementById('insiderTooltip').style.display = 'none';
+            }, 200);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            loadSignals();
+            startAutoRefresh();
+
+            // Add event listeners for filters
+            document.getElementById('riskTolerance').addEventListener('change', loadSignals);
+            document.getElementById('marketCap').addEventListener('change', loadSignals);
+            document.getElementById('minConfidence').addEventListener('change', loadSignals);
+            document.getElementById('resultsLimit').addEventListener('change', loadSignals);
+        });
+    </script>
+</body>
+</html>
+
