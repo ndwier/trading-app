@@ -1215,6 +1215,168 @@ def brokers_execute_order():
         return jsonify({'error': str(e)}), 500
 
 
+# ============================================================================
+# EXPORT ENDPOINTS
+# ============================================================================
+
+@app.route('/api/export/signals/csv')
+def export_signals_csv():
+    """Export signals to CSV."""
+    try:
+        from flask import Response
+        import csv
+        from io import StringIO
+        from sqlalchemy import func, desc
+        
+        # Get filters
+        risk_tolerance = request.args.get('risk_tolerance', 'moderate')
+        market_cap = request.args.get('market_cap', 'all')
+        min_confidence = float(request.args.get('min_confidence', 0))
+        limit = int(request.args.get('limit', 100))
+        
+        with get_session() as session:
+            # Build query
+            query = session.query(Signal).filter(Signal.signal_type == 'BUY')
+            
+            # Apply confidence filter based on risk tolerance
+            if risk_tolerance == 'conservative':
+                query = query.filter(Signal.strength >= 0.8)
+            
+            # Apply min confidence
+            if min_confidence > 0:
+                query = query.filter(Signal.strength >= min_confidence / 100.0)
+            
+            query = query.order_by(desc(Signal.strength)).limit(limit)
+            signals = query.all()
+            
+            # Create CSV
+            output = StringIO()
+            writer = csv.writer(output)
+            
+            # Header
+            writer.writerow([
+                'Ticker',
+                'Confidence %',
+                'Signal Type',
+                'Reasoning',
+                'Strategy',
+                'Generated Date',
+                'Expires',
+                'Active'
+            ])
+            
+            # Data rows
+            for signal in signals:
+                writer.writerow([
+                    signal.ticker,
+                    f"{signal.strength * 100:.1f}",
+                    signal.signal_type.value if hasattr(signal.signal_type, 'value') else signal.signal_type,
+                    signal.reasoning or '',
+                    signal.strategy.name if signal.strategy else '',
+                    signal.generated_at.strftime('%Y-%m-%d %H:%M') if signal.generated_at else '',
+                    signal.expires_at.strftime('%Y-%m-%d') if signal.expires_at else '',
+                    'Yes' if signal.is_active else 'No'
+                ])
+            
+            # Create response
+            output.seek(0)
+            response = Response(output.getvalue(), mimetype='text/csv')
+            response.headers['Content-Disposition'] = f'attachment; filename=insider_signals_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            
+            return response
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/export/trades/csv')
+def export_trades_csv():
+    """Export trades to CSV."""
+    try:
+        from flask import Response
+        import csv
+        from io import StringIO
+        
+        # Get filters from query params (from query builder)
+        ticker = request.args.get('ticker')
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        min_amount = request.args.get('min_amount', type=float)
+        max_amount = request.args.get('max_amount', type=float)
+        transaction_type = request.args.get('transaction_type')
+        filer_type = request.args.get('filer_type')
+        limit = int(request.args.get('limit', 1000))
+        
+        with get_session() as session:
+            query = session.query(Trade).join(Filer)
+            
+            # Apply filters
+            if ticker:
+                query = query.filter(Trade.ticker == ticker.upper())
+            if start_date:
+                query = query.filter(Trade.trade_date >= start_date)
+            if end_date:
+                query = query.filter(Trade.trade_date <= end_date)
+            if min_amount:
+                query = query.filter(Trade.amount_usd >= min_amount)
+            if max_amount:
+                query = query.filter(Trade.amount_usd <= max_amount)
+            if transaction_type:
+                query = query.filter(Trade.transaction_type == transaction_type)
+            if filer_type:
+                query = query.filter(Filer.filer_type == filer_type)
+            
+            query = query.order_by(Trade.trade_date.desc()).limit(limit)
+            trades = query.all()
+            
+            # Create CSV
+            output = StringIO()
+            writer = csv.writer(output)
+            
+            # Header
+            writer.writerow([
+                'Date',
+                'Ticker',
+                'Filer Name',
+                'Filer Type',
+                'Transaction Type',
+                'Amount USD',
+                'Quantity',
+                'Price',
+                'Source',
+                'Filing URL'
+            ])
+            
+            # Data rows
+            for trade in trades:
+                writer.writerow([
+                    trade.trade_date.strftime('%Y-%m-%d') if trade.trade_date else '',
+                    trade.ticker or '',
+                    trade.filer.name if trade.filer else '',
+                    trade.filer.filer_type.value if trade.filer and hasattr(trade.filer.filer_type, 'value') else '',
+                    trade.transaction_type.value if hasattr(trade.transaction_type, 'value') else trade.transaction_type,
+                    f"{trade.amount_usd:.2f}" if trade.amount_usd else '',
+                    trade.quantity or '',
+                    f"{trade.price_per_share:.2f}" if trade.price_per_share else '',
+                    trade.source.value if hasattr(trade.source, 'value') else trade.source,
+                    trade.filing_url or ''
+                ])
+            
+            # Create response
+            output.seek(0)
+            response = Response(output.getvalue(), mimetype='text/csv')
+            response.headers['Content-Disposition'] = f'attachment; filename=insider_trades_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            
+            return response
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({'error': 'Not found'}), 404

@@ -94,7 +94,7 @@
                 <button class="btn btn-primary" onclick="loadSignals()">
                     🔄 Refresh Signals
                 </button>
-                <button class="btn btn-secondary" onclick="exportToCSV()">
+                <button class="btn btn-secondary" onclick="exportSignalsToCSV()">
                     📥 Export to CSV
                 </button>
             </div>
@@ -165,7 +165,7 @@
                     <button class="btn btn-primary" onclick="runCustomQuery()">
                         🔍 Run Query
                     </button>
-                    <button class="btn btn-secondary" onclick="exportQueryResults()">
+                    <button class="btn btn-secondary" onclick="exportTradesToCSV()">
                         📥 Export Results
                     </button>
                     <button class="btn btn-secondary" onclick="clearQueryFilters()">
@@ -727,25 +727,59 @@
             alert(`✅ ${ticker} added to watchlist!\n(Feature coming soon)`);
         }
 
-        // Export to CSV
-        function exportToCSV() {
-            if (allSignals.length === 0) {
-                alert('No signals to export');
-                return;
-            }
-
-            let csv = 'Ticker,Signal Type,Strength,Num Trades,Num Insiders,Total Volume,Reasoning\n';
+        // Export signals to CSV (using backend API)
+        function exportSignalsToCSV() {
+            const riskTolerance = document.getElementById('riskTolerance').value;
+            const marketCap = document.getElementById('marketCap').value;
+            const minConfidence = document.getElementById('minConfidence').value;
+            const limit = document.getElementById('resultsLimit').value;
             
-            allSignals.forEach(signal => {
-                csv += `${signal.ticker},${signal.signal_type},${signal.strength},${signal.num_trades || 0},${signal.num_insiders || 0},"${formatCurrency(signal.total_volume || 0)}","${(signal.reasoning || '').replace(/"/g, '""')}"\n`;
-            });
-
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
+            const url = `/api/export/signals/csv?risk_tolerance=${riskTolerance}&market_cap=${marketCap}&min_confidence=${minConfidence}&limit=${limit}`;
+            
+            // Create temporary link and trigger download
             const a = document.createElement('a');
             a.href = url;
-            a.download = `insider-signals-${new Date().toISOString().split('T')[0]}.csv`;
+            a.download = '';  // Filename comes from server
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
+        }
+        
+        // Export query results to CSV
+        function exportTradesToCSV() {
+            const ticker = document.getElementById('queryTicker').value;
+            const startDate = document.getElementById('queryStartDate').value;
+            const endDate = document.getElementById('queryEndDate').value;
+            const minAmount = document.getElementById('queryMinAmount').value;
+            const maxAmount = document.getElementById('queryMaxAmount').value;
+            const txType = document.getElementById('queryTxType').value;
+            const filerType = document.getElementById('queryFilerType').value;
+            const limit = document.getElementById('queryLimit').value;
+            
+            const params = new URLSearchParams();
+            if (ticker) params.append('ticker', ticker);
+            if (startDate) params.append('start_date', startDate);
+            if (endDate) params.append('end_date', endDate);
+            if (minAmount) params.append('min_amount', minAmount);
+            if (maxAmount) params.append('max_amount', maxAmount);
+            if (txType) params.append('transaction_type', txType);
+            if (filerType) params.append('filer_type', filerType);
+            params.append('limit', limit);
+            
+            const url = `/api/export/trades/csv?${params.toString()}`;
+            
+            // Create temporary link and trigger download
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '';  // Filename comes from server
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+        
+        // Keep old function for backwards compatibility
+        function exportToCSV() {
+            exportSignalsToCSV();
         }
 
         // Auto-refresh
