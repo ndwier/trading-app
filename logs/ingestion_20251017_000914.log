@@ -1,0 +1,17 @@
+2025-10-17 00:09:14,456 - __main__ - INFO - === Trading Data Ingestion ===
+2025-10-17 00:09:14,457 - __main__ - INFO - Source: politicians
+2025-10-17 00:09:14,457 - __main__ - INFO - Days: 90
+2025-10-17 00:09:14,457 - __main__ - INFO - Normalize: False
+2025-10-17 00:09:14,457 - __main__ - INFO - Starting politician ingestion for 90 days
+2025-10-17 00:09:14,457 - ingester.quiver_politician - WARNING - No Quiver API key found - will skip Quiver ingestion
+2025-10-17 00:09:14,457 - __main__ - ERROR - Politician ingestion failed: name 'logging' is not defined
+2025-10-17 00:09:14,457 - __main__ - INFO - 
+==================================================
+2025-10-17 00:09:14,457 - __main__ - INFO - INGESTION SUMMARY
+2025-10-17 00:09:14,457 - __main__ - INFO - ==================================================
+2025-10-17 00:09:14,457 - __main__ - ERROR - POLITICIANS: Failed - name 'logging' is not defined
+2025-10-17 00:09:14,457 - __main__ - INFO - 
+Next steps:
+2025-10-17 00:09:14,457 - __main__ - INFO - 1. Check data quality: python -m src.ingestion.data_normalizer --trades
+2025-10-17 00:09:14,457 - __main__ - INFO - 2. Run backtests: python -m src.backtesting.backtester
+2025-10-17 00:09:14,457 - __main__ - INFO - 3. View dashboard: python app.py

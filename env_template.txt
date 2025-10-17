@@ -1,0 +1,24 @@
+# Database Configuration
+DATABASE_URL=postgresql://username:password@localhost:5432/trading_app
+# For development, use SQLite (default): sqlite:///data/trading_app.db
+
+REDIS_URL=redis://localhost:6379/0
+
+# API Keys (Optional - many features work with free APIs)
+QUIVER_API_KEY=your_quiver_api_key_here
+FINNHUB_API_KEY=your_finnhub_api_key_here
+ALPHA_VANTAGE_API_KEY=your_alpha_vantage_api_key_here
+
+# Web Configuration
+SECRET_KEY=your-secret-key-for-flask-sessions
+FLASK_DEBUG=False
+FLASK_HOST=127.0.0.1
+FLASK_PORT=5000
+CORS_ORIGINS=http://localhost:3000
+
+# Database Pool Settings
+DB_POOL_SIZE=10
+DB_MAX_OVERFLOW=20
+
+# Logging
+LOG_LEVEL=INFO

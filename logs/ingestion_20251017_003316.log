@@ -1,0 +1,24 @@
+2025-10-17 00:33:16,555 - __main__ - INFO - === Trading Data Ingestion ===
+2025-10-17 00:33:16,555 - __main__ - INFO - Source: politicians
+2025-10-17 00:33:16,555 - __main__ - INFO - Days: 30
+2025-10-17 00:33:16,555 - __main__ - INFO - Normalize: False
+2025-10-17 00:33:16,555 - __main__ - INFO - Starting politician ingestion for 30 days
+2025-10-17 00:33:16,555 - ingester.quiver_politician - WARNING - No Quiver API key found - will skip Quiver ingestion
+2025-10-17 00:33:16,555 - src.ingestion.politician_scraper - INFO - Quiver API key not found, using free sources only
+2025-10-17 00:33:16,555 - src.ingestion.politician_scraper - INFO - Initialized 1 politician scrapers
+2025-10-17 00:33:16,555 - src.ingestion.politician_scraper - INFO - Running ingestion for capitol_trades
+2025-10-17 00:33:16,556 - ingester.capitol_trades - INFO - Starting capitol_trades ingestion in recent mode
+2025-10-17 00:33:16,720 - ingester.capitol_trades - INFO - Ingestion completed: 0/0 trades collected in 0.2 seconds
+2025-10-17 00:33:16,727 - src.database.connection - INFO - Database engine initialized with URL: sqlite:////Users/natewier/Projects/trading-app/data/trading_app.db
+2025-10-17 00:33:18,613 - src.ingestion.politician_scraper - INFO - Political ingestion complete: 0 total trades
+2025-10-17 00:33:18,613 - __main__ - INFO - Politician ingestion completed: {'total_trades': 0, 'scraper_results': {'capitol_trades': {'mode': 'recent', 'trades_processed': 0, 'trades_collected': 0, 'errors': 0, 'runtime_seconds': 0.164744, 'start_time': datetime.datetime(2025, 10, 17, 0, 33, 16, 556022), 'end_time': datetime.datetime(2025, 10, 17, 0, 33, 16, 720766)}}}
+2025-10-17 00:33:18,615 - __main__ - INFO - 
+==================================================
+2025-10-17 00:33:18,615 - __main__ - INFO - INGESTION SUMMARY
+2025-10-17 00:33:18,615 - __main__ - INFO - ==================================================
+2025-10-17 00:33:18,615 - __main__ - INFO - POLITICIANS: 0 trades collected
+2025-10-17 00:33:18,615 - __main__ - INFO - 
+Next steps:
+2025-10-17 00:33:18,615 - __main__ - INFO - 1. Check data quality: python -m src.ingestion.data_normalizer --trades
+2025-10-17 00:33:18,616 - __main__ - INFO - 2. Run backtests: python -m src.backtesting.backtester
+2025-10-17 00:33:18,616 - __main__ - INFO - 3. View dashboard: python app.py

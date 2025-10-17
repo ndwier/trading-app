@@ -1,0 +1,56 @@
+2025-10-17 00:12:00,150 - __main__ - INFO - === Trading Data Ingestion ===
+2025-10-17 00:12:00,150 - __main__ - INFO - Source: all
+2025-10-17 00:12:00,150 - __main__ - INFO - Days: 90
+2025-10-17 00:12:00,150 - __main__ - INFO - Normalize: False
+2025-10-17 00:12:00,150 - __main__ - INFO - Starting politician ingestion for 90 days
+2025-10-17 00:12:00,150 - ingester.quiver_politician - WARNING - No Quiver API key found - will skip Quiver ingestion
+2025-10-17 00:12:00,150 - __main__ - ERROR - Politician ingestion failed: name 'logging' is not defined
+2025-10-17 00:12:00,150 - __main__ - INFO - Starting SEC ingestion for 7 days
+2025-10-17 00:12:00,150 - ingester.sec_edgar - INFO - Starting SEC ingestion for 7 days
+2025-10-17 00:12:00,150 - ingester.sec_edgar - INFO - Starting sec_edgar ingestion in recent mode
+2025-10-17 00:12:00,547 - ingester.sec_edgar - ERROR - Request failed: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251010.idx - 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251010.idx
+2025-10-17 00:12:00,547 - ingester.sec_edgar - WARNING - Failed to get daily index for 2025-10-10: Request failed: 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251010.idx
+2025-10-17 00:12:06,271 - ingester.sec_edgar - ERROR - Request failed: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251011.idx - 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251011.idx
+2025-10-17 00:12:06,272 - ingester.sec_edgar - WARNING - Failed to get daily index for 2025-10-11: Request failed: 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251011.idx
+2025-10-17 00:12:12,234 - ingester.sec_edgar - ERROR - Request failed: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251012.idx - 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251012.idx
+2025-10-17 00:12:12,234 - ingester.sec_edgar - WARNING - Failed to get daily index for 2025-10-12: Request failed: 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251012.idx
+2025-10-17 00:12:18,246 - ingester.sec_edgar - ERROR - Request failed: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251013.idx - 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251013.idx
+2025-10-17 00:12:18,247 - ingester.sec_edgar - WARNING - Failed to get daily index for 2025-10-13: Request failed: 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251013.idx
+2025-10-17 00:12:24,246 - ingester.sec_edgar - ERROR - Request failed: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251014.idx - 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251014.idx
+2025-10-17 00:12:24,246 - ingester.sec_edgar - WARNING - Failed to get daily index for 2025-10-14: Request failed: 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251014.idx
+2025-10-17 00:12:30,258 - ingester.sec_edgar - ERROR - Request failed: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251015.idx - 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251015.idx
+2025-10-17 00:12:30,259 - ingester.sec_edgar - WARNING - Failed to get daily index for 2025-10-15: Request failed: 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251015.idx
+2025-10-17 00:12:36,259 - ingester.sec_edgar - ERROR - Request failed: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251016.idx - 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251016.idx
+2025-10-17 00:12:36,260 - ingester.sec_edgar - WARNING - Failed to get daily index for 2025-10-16: Request failed: 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251016.idx
+2025-10-17 00:12:42,268 - ingester.sec_edgar - ERROR - Request failed: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251017.idx - 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251017.idx
+2025-10-17 00:12:42,269 - ingester.sec_edgar - WARNING - Failed to get daily index for 2025-10-17: Request failed: 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251017.idx
+2025-10-17 00:12:42,270 - ingester.sec_edgar - INFO - Ingestion completed: 0/0 trades collected in 42.1 seconds
+2025-10-17 00:12:42,290 - src.database.connection - INFO - Database engine initialized with URL: sqlite:////Users/natewier/Projects/trading-app/data/trading_app.db
+2025-10-17 00:12:48,263 - ingester.sec_edgar - ERROR - Request failed: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251010.idx - 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251010.idx
+2025-10-17 00:12:48,264 - ingester.sec_edgar - WARNING - Failed to get daily index for 2025-10-10: Request failed: 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251010.idx
+2025-10-17 00:12:54,264 - ingester.sec_edgar - ERROR - Request failed: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251011.idx - 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251011.idx
+2025-10-17 00:12:54,267 - ingester.sec_edgar - WARNING - Failed to get daily index for 2025-10-11: Request failed: 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251011.idx
+2025-10-17 00:13:00,312 - ingester.sec_edgar - ERROR - Request failed: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251012.idx - 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251012.idx
+2025-10-17 00:13:00,328 - ingester.sec_edgar - WARNING - Failed to get daily index for 2025-10-12: Request failed: 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251012.idx
+2025-10-17 00:13:06,279 - ingester.sec_edgar - ERROR - Request failed: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251013.idx - 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251013.idx
+2025-10-17 00:13:06,280 - ingester.sec_edgar - WARNING - Failed to get daily index for 2025-10-13: Request failed: 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251013.idx
+2025-10-17 00:13:12,276 - ingester.sec_edgar - ERROR - Request failed: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251014.idx - 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251014.idx
+2025-10-17 00:13:12,277 - ingester.sec_edgar - WARNING - Failed to get daily index for 2025-10-14: Request failed: 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251014.idx
+2025-10-17 00:13:18,297 - ingester.sec_edgar - ERROR - Request failed: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251015.idx - 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251015.idx
+2025-10-17 00:13:18,298 - ingester.sec_edgar - WARNING - Failed to get daily index for 2025-10-15: Request failed: 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251015.idx
+2025-10-17 00:13:24,525 - ingester.sec_edgar - ERROR - Request failed: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251016.idx - 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251016.idx
+2025-10-17 00:13:24,525 - ingester.sec_edgar - WARNING - Failed to get daily index for 2025-10-16: Request failed: 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251016.idx
+2025-10-17 00:13:30,300 - ingester.sec_edgar - ERROR - Request failed: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251017.idx - 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251017.idx
+2025-10-17 00:13:30,300 - ingester.sec_edgar - WARNING - Failed to get daily index for 2025-10-17: Request failed: 404 Client Error: Not Found for url: https://data.sec.gov/Archives/edgar/daily-index/2025/QTR4/master.20251017.idx
+2025-10-17 00:13:30,302 - __main__ - INFO - SEC ingestion completed: {'mode': 'recent', 'trades_processed': 0, 'trades_collected': 0, 'errors': 0, 'runtime_seconds': 42.119574, 'start_time': datetime.datetime(2025, 10, 17, 0, 12, 0, 150532), 'end_time': datetime.datetime(2025, 10, 17, 0, 12, 42, 270106)}
+2025-10-17 00:13:30,307 - __main__ - INFO - 
+==================================================
+2025-10-17 00:13:30,307 - __main__ - INFO - INGESTION SUMMARY
+2025-10-17 00:13:30,307 - __main__ - INFO - ==================================================
+2025-10-17 00:13:30,307 - __main__ - ERROR - POLITICIANS: Failed - name 'logging' is not defined
+2025-10-17 00:13:30,307 - __main__ - INFO - SEC: 0 trades collected
+2025-10-17 00:13:30,307 - __main__ - INFO - 
+Next steps:
+2025-10-17 00:13:30,307 - __main__ - INFO - 1. Check data quality: python -m src.ingestion.data_normalizer --trades
+2025-10-17 00:13:30,307 - __main__ - INFO - 2. Run backtests: python -m src.backtesting.backtester
+2025-10-17 00:13:30,307 - __main__ - INFO - 3. View dashboard: python app.py

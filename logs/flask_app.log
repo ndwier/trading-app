@@ -1,0 +1,123 @@
+Starting Trading App on http://127.0.0.1:5000
+Dashboard features:
+- View recent insider/politician trades
+- Trigger data ingestion
+- Search trades and filers
+- View database statistics
+ * Serving Flask app 'app'
+ * Debug mode: off
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [16/Oct/2025 23:56:39] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [16/Oct/2025 23:59:27] "HEAD / HTTP/1.1" 200 -
+127.0.0.1 - - [16/Oct/2025 23:59:48] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [16/Oct/2025 23:59:48] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [16/Oct/2025 23:59:48] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+127.0.0.1 - - [16/Oct/2025 23:59:48] "GET /api/trades?limit=20 HTTP/1.1" 200 -
+127.0.0.1 - - [16/Oct/2025 23:59:49] "[35m[1mGET /api/recommendations?portfolio_value=100000&risk_tolerance=moderate HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:00:11] "[35m[1mGET /api/signals?portfolio_value=100000&risk_tolerance=moderate HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:00:21] "[35m[1mGET /api/recommendations?portfolio_value=10000&risk_tolerance=moderate HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:02:12] "GET / HTTP/1.1" 200 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:02:12] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:02:12] "GET /api/trades?limit=20 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2025 00:02:13] "[35m[1mGET /api/recommendations?portfolio_value=100000&risk_tolerance=moderate HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:02:13] "GET / HTTP/1.1" 200 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:02:13] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:02:13] "GET /api/trades?limit=20 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2025 00:02:14] "[35m[1mGET /api/recommendations?portfolio_value=100000&risk_tolerance=moderate HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:02:16] "GET / HTTP/1.1" 200 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:02:16] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:02:16] "GET /api/trades?limit=20 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2025 00:02:17] "[35m[1mGET /api/recommendations?portfolio_value=100000&risk_tolerance=moderate HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:02:22] "GET /api/trades?limit=50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2025 00:05:05] "GET / HTTP/1.1" 200 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:05:05] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:05:05] "GET /api/trades?limit=20 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2025 00:05:06] "[35m[1mGET /api/recommendations?portfolio_value=100000&risk_tolerance=moderate HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:05:08] "GET /api/trades?limit=50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2025 00:05:14] "GET /api/trades?limit=50 HTTP/1.1" 200 -
+No Quiver API key found - will skip Quiver ingestion
+127.0.0.1 - - [17/Oct/2025 00:05:15] "[35m[1mPOST /api/ingestion/run HTTP/1.1[0m" 500 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:05:22] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:05:22] "GET /api/trades?limit=20 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2025 00:09:20] "GET / HTTP/1.1" 200 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:09:20] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:09:20] "GET /api/trades?limit=20 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2025 00:09:21] "[35m[1mGET /api/recommendations?portfolio_value=100000&risk_tolerance=moderate HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:09:21] "GET /api/trades?limit=50 HTTP/1.1" 200 -
+No Quiver API key found - will skip Quiver ingestion
+127.0.0.1 - - [17/Oct/2025 00:09:39] "[35m[1mPOST /api/ingestion/run HTTP/1.1[0m" 500 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:09:43] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:09:43] "GET /api/trades?limit=20 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2025 00:11:29] "[35m[1mGET /api/signals?portfolio_value=100000&risk_tolerance=moderate HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:11:31] "GET / HTTP/1.1" 200 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:11:31] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:11:31] "GET /api/trades?limit=20 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2025 00:11:32] "[35m[1mGET /api/recommendations?portfolio_value=100000&risk_tolerance=moderate HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:11:32] "GET / HTTP/1.1" 200 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:11:32] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:11:32] "GET /api/trades?limit=20 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2025 00:11:32] "GET / HTTP/1.1" 200 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:11:32] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:11:32] "GET /api/trades?limit=20 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2025 00:11:32] "GET / HTTP/1.1" 200 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:11:32] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:11:32] "GET /api/trades?limit=20 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2025 00:11:33] "GET / HTTP/1.1" 200 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:11:33] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:11:33] "GET /api/trades?limit=20 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2025 00:11:33] "GET / HTTP/1.1" 200 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:11:33] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:11:33] "GET /api/trades?limit=20 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2025 00:11:34] "[35m[1mGET /api/recommendations?portfolio_value=100000&risk_tolerance=moderate HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:12:07] "GET /api/trades?limit=50 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2025 00:12:09] "GET / HTTP/1.1" 200 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:12:09] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:12:09] "GET /api/trades?limit=20 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2025 00:12:10] "[35m[1mGET /api/recommendations?portfolio_value=100000&risk_tolerance=moderate HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:12:11] "GET /api/trades?limit=50 HTTP/1.1" 200 -
+No Quiver API key found - will skip Quiver ingestion
+127.0.0.1 - - [17/Oct/2025 00:12:12] "[35m[1mPOST /api/ingestion/run HTTP/1.1[0m" 500 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:12:16] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:12:16] "GET /api/trades?limit=20 HTTP/1.1" 200 -
+No Quiver API key found - will skip Quiver ingestion
+127.0.0.1 - - [17/Oct/2025 00:18:25] "[35m[1mPOST /api/ingestion/run HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:18:28] "GET / HTTP/1.1" 200 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:18:28] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:18:28] "GET /api/trades?limit=20 HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2025 00:18:29] "[35m[1mGET /api/recommendations?portfolio_value=100000&risk_tolerance=moderate HTTP/1.1[0m" 500 -
+127.0.0.1 - - [17/Oct/2025 00:18:32] "[35m[1mGET /api/recommendations?portfolio_value=100000&risk_tolerance=aggressive HTTP/1.1[0m" 500 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:19:15] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:20:12] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:20:37] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:21:01] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:21:35] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:22:30] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:22:58] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
+Database session error: 'int' object has no attribute 'label'
+127.0.0.1 - - [17/Oct/2025 00:23:05] "[35m[1mGET /api/stats HTTP/1.1[0m" 500 -
