@@ -363,9 +363,10 @@
                     grid.appendChild(card);
                 });
                 
-                // Load backtest badges for all signals
+                // Load backtest badges and price data for all signals
                 allSignals.forEach(signal => {
                     loadBacktestBadge(signal.ticker);
+                    loadPriceData(signal.ticker);
                 });
 
             } catch (error) {
@@ -397,6 +398,15 @@
                     <span id="backtest_badge_${signal.ticker}" style="font-size: 0.7rem; padding: 0.2rem 0.5rem; 
                           background: rgba(100,100,100,0.2); color: var(--text-secondary); 
                           border-radius: 12px; opacity: 0.6;">⏳</span>
+                </div>
+                
+                <!-- Market Data Section -->
+                <div id="price_${signal.ticker}" style="background: rgba(56, 189, 248, 0.1); padding: 0.75rem; 
+                     border-radius: 8px; margin-bottom: 1rem; border: 1px solid rgba(56, 189, 248, 0.3);">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary); font-size: 0.75rem;">
+                        <span>💰</span>
+                        <span>Loading price...</span>
+                    </div>
                 </div>
                 
                 <div class="insider-info">
@@ -833,6 +843,86 @@
                 
             } catch (error) {
                 badge.style.display = 'none';
+            }
+        }
+        
+        async function loadPriceData(ticker) {
+            const priceSection = document.getElementById(`price_${ticker}`);
+            if (!priceSection) return;
+            
+            try {
+                // Fetch both current price and entry quality
+                const [priceRes, entryRes] = await Promise.all([
+                    fetch(`/api/price/${ticker}`),
+                    fetch(`/api/price/${ticker}/entry_quality`)
+                ]);
+                
+                const priceData = await priceRes.json();
+                const entryData = await entryRes.json();
+                
+                if (priceData.error && entryData.error) {
+                    priceSection.style.display = 'none';
+                    return;
+                }
+                
+                const currentPrice = priceData.current_price || priceData.price || 0;
+                const change = priceData.change_percent || 0;
+                const changeColor = change >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+                
+                let entryQuality = '';
+                let entryColor = '';
+                
+                if (!entryData.error && entryData.entry_quality) {
+                    const quality = entryData.entry_quality.rating;
+                    if (quality === 'EXCELLENT') {
+                        entryQuality = '🟢 Excellent Entry';
+                        entryColor = 'var(--accent-green)';
+                    } else if (quality === 'VERY GOOD') {
+                        entryQuality = '🟢 Very Good';
+                        entryColor = 'var(--accent-green)';
+                    } else if (quality === 'GOOD') {
+                        entryQuality = '🟡 Good Entry';
+                        entryColor = 'var(--accent-yellow)';
+                    } else if (quality === 'FAIR') {
+                        entryQuality = '🟡 Fair Entry';
+                        entryColor = 'var(--accent-yellow)';
+                    } else if (quality === 'POOR') {
+                        entryQuality = '🔴 Poor Entry';
+                        entryColor = 'var(--accent-red)';
+                    }
+                }
+                
+                priceSection.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+                                Current Price
+                            </div>
+                            <div style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">
+                                $${currentPrice.toFixed(2)}
+                            </div>
+                            <div style="font-size: 0.75rem; color: ${changeColor}; margin-top: 0.25rem;">
+                                ${change >= 0 ? '+' : ''}${change.toFixed(2)}% today
+                            </div>
+                        </div>
+                        ${entryQuality ? `
+                            <div style="text-align: right;">
+                                <div style="font-size: 0.8rem; font-weight: 600; color: ${entryColor};">
+                                    ${entryQuality}
+                                </div>
+                                ${entryData.entry_quality.percent_vs_avg ? `
+                                    <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                                        ${entryData.entry_quality.percent_vs_avg >= 0 ? '+' : ''}${entryData.entry_quality.percent_vs_avg.toFixed(1)}% vs insiders
+                                    </div>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error(`Error loading price for ${ticker}:`, error);
+                priceSection.style.display = 'none';
             }
         }
 
