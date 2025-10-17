@@ -1291,6 +1291,108 @@ def export_signals_csv():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/stats/top_insiders')
+def top_insiders_week():
+    """Get top insiders by trade volume this week."""
+    try:
+        from sqlalchemy import func
+        
+        days = int(request.args.get('days', 7))
+        limit = int(request.args.get('limit', 10))
+        
+        cutoff_date = datetime.now() - timedelta(days=days)
+        
+        with get_session() as session:
+            # Get top filers by trade volume
+            top_filers = session.query(
+                Filer.name,
+                Filer.filer_type,
+                Filer.title,
+                Filer.company,
+                func.count(Trade.trade_id).label('trade_count'),
+                func.sum(Trade.amount_usd).label('total_volume'),
+                func.count(func.distinct(Trade.ticker)).label('unique_tickers')
+            ).join(Trade).filter(
+                Trade.trade_date >= cutoff_date
+            ).group_by(
+                Filer.filer_id, Filer.name, Filer.filer_type, Filer.title, Filer.company
+            ).order_by(
+                func.sum(Trade.amount_usd).desc()
+            ).limit(limit).all()
+            
+            results = []
+            for filer in top_filers:
+                results.append({
+                    'name': filer.name,
+                    'type': filer.filer_type.value if hasattr(filer.filer_type, 'value') else filer.filer_type,
+                    'title': filer.title or filer.company or '',
+                    'trade_count': filer.trade_count,
+                    'total_volume': float(filer.total_volume or 0),
+                    'unique_tickers': filer.unique_tickers
+                })
+            
+            return jsonify({
+                'period_days': days,
+                'top_insiders': results
+            })
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/stats/sector_breakdown')
+def sector_breakdown():
+    """Get sector breakdown of recent trades."""
+    try:
+        days = int(request.args.get('days', 30))
+        cutoff_date = datetime.now() - timedelta(days=days)
+        
+        # Simplified sector mapping (in production, use proper sector API)
+        sector_map = {
+            'AAPL': 'Technology', 'MSFT': 'Technology', 'GOOGL': 'Technology', 'AMZN': 'Consumer', 
+            'TSLA': 'Automotive', 'META': 'Technology', 'NVDA': 'Technology', 'JPM': 'Finance',
+            'BAC': 'Finance', 'GS': 'Finance', 'WFC': 'Finance', 'C': 'Finance',
+            'JNJ': 'Healthcare', 'UNH': 'Healthcare', 'PFE': 'Healthcare', 'ABBV': 'Healthcare',
+            'XOM': 'Energy', 'CVX': 'Energy', 'COP': 'Energy',
+            'BA': 'Industrial', 'CAT': 'Industrial', 'GE': 'Industrial'
+        }
+        
+        with get_session() as session:
+            trades = session.query(
+                Trade.ticker,
+                func.count(Trade.trade_id).label('count'),
+                func.sum(Trade.amount_usd).label('volume')
+            ).filter(
+                Trade.trade_date >= cutoff_date,
+                Trade.ticker.isnot(None)
+            ).group_by(Trade.ticker).all()
+            
+            sector_stats = {}
+            for trade in trades:
+                sector = sector_map.get(trade.ticker, 'Other')
+                if sector not in sector_stats:
+                    sector_stats[sector] = {'count': 0, 'volume': 0}
+                sector_stats[sector]['count'] += trade.count
+                sector_stats[sector]['volume'] += float(trade.volume or 0)
+            
+            results = [
+                {'sector': k, 'trade_count': v['count'], 'total_volume': v['volume']}
+                for k, v in sector_stats.items()
+            ]
+            
+            return jsonify({
+                'period_days': days,
+                'sectors': sorted(results, key=lambda x: x['total_volume'], reverse=True)
+            })
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/export/trades/csv')
 def export_trades_csv():
     """Export trades to CSV."""
