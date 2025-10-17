@@ -1342,6 +1342,159 @@ def top_insiders_week():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/signals/performance/summary')
+def signal_performance_summary():
+    """Get signal performance summary."""
+    try:
+        from src.analysis.signal_tracker import SignalTracker
+        
+        days = int(request.args.get('days', 30))
+        tracker = SignalTracker()
+        summary = tracker.get_signal_performance_summary(days)
+        
+        return jsonify(summary)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/signals/performance/top')
+def signal_performance_top():
+    """Get top performing signals."""
+    try:
+        from src.analysis.signal_tracker import SignalTracker
+        
+        limit = int(request.args.get('limit', 10))
+        tracker = SignalTracker()
+        top = tracker.get_top_performers(limit)
+        
+        return jsonify({'top_performers': top})
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/signals/performance/evaluate', methods=['POST'])
+def evaluate_signals():
+    """Evaluate all active signals (admin/cron endpoint)."""
+    try:
+        from src.analysis.signal_tracker import SignalTracker
+        
+        tracker = SignalTracker()
+        result = tracker.evaluate_all_signals()
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/paper/portfolio')
+def paper_portfolio_summary():
+    """Get paper trading portfolio summary."""
+    try:
+        from src.analysis.paper_trading import PaperTradingPortfolio
+        
+        portfolio = PaperTradingPortfolio()
+        summary = portfolio.get_portfolio_summary()
+        
+        return jsonify(summary)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/paper/execute', methods=['POST'])
+def paper_execute_signal():
+    """Execute a paper trade from a signal."""
+    try:
+        from src.analysis.paper_trading import PaperTradingPortfolio
+        
+        data = request.get_json()
+        signal_id = data.get('signal_id')
+        quantity = data.get('quantity')
+        
+        if not signal_id:
+            return jsonify({'error': 'signal_id required'}), 400
+        
+        with get_session() as session:
+            signal = session.query(Signal).filter(Signal.signal_id == signal_id).first()
+            
+            if not signal:
+                return jsonify({'error': 'Signal not found'}), 404
+            
+            portfolio = PaperTradingPortfolio()
+            result = portfolio.execute_signal(signal, quantity)
+            
+            return jsonify(result)
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/paper/history')
+def paper_trade_history():
+    """Get paper trading history."""
+    try:
+        from src.analysis.paper_trading import PaperTradingPortfolio
+        
+        limit = int(request.args.get('limit', 50))
+        portfolio = PaperTradingPortfolio()
+        history = portfolio.get_trade_history(limit)
+        
+        return jsonify({'trades': history})
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/paper/reset', methods=['POST'])
+def paper_reset_portfolio():
+    """Reset paper trading portfolio."""
+    try:
+        from src.analysis.paper_trading import PaperTradingPortfolio
+        
+        portfolio = PaperTradingPortfolio()
+        result = portfolio.reset_portfolio()
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/insiders/accuracy')
+def insider_accuracy_rankings():
+    """Get insider accuracy rankings."""
+    try:
+        from src.analysis.signal_tracker import SignalTracker
+        
+        limit = int(request.args.get('limit', 20))
+        tracker = SignalTracker()
+        rankings = tracker.get_insider_accuracy(limit)
+        
+        return jsonify({'rankings': rankings})
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/stats/sector_breakdown')
 def sector_breakdown():
     """Get sector breakdown of recent trades."""
