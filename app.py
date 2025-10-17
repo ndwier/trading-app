@@ -333,6 +333,122 @@ def get_enhanced_signals():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/insider_buys/<ticker>')
+def get_insider_buy_history(ticker):
+    """Get detailed insider buying history for a ticker."""
+    
+    try:
+        ticker = ticker.upper()
+        days = request.args.get('days', 365, type=int)
+        
+        with get_session() as session:
+            from src.database.models import TransactionType
+            
+            # Get buy trades for this ticker
+            trades = session.query(Trade).join(Filer).filter(
+                Trade.ticker == ticker,
+                Trade.transaction_type == TransactionType.BUY,
+                Trade.trade_date >= (datetime.now().date() - timedelta(days=days))
+            ).order_by(Trade.trade_date.desc()).all()
+            
+            result = []
+            for trade in trades:
+                result.append({
+                    'date': trade.trade_date.isoformat(),
+                    'insider_name': trade.filer.name if trade.filer else 'Unknown',
+                    'insider_role': trade.filer.office if trade.filer and hasattr(trade.filer, 'office') else 'N/A',
+                    'price': float(trade.price) if trade.price else None,
+                    'quantity': float(trade.quantity) if trade.quantity else None,
+                    'amount': float(trade.amount_usd) if trade.amount_usd else None,
+                    'filing_url': trade.filing_url
+                })
+            
+            # Calculate average buy price
+            prices = [t['price'] for t in result if t['price']]
+            avg_buy_price = sum(prices) / len(prices) if prices else None
+            
+            # Get current price (would need yfinance here, placeholder for now)
+            current_price = None  # TODO: Fetch from yfinance
+            
+            return jsonify({
+                'ticker': ticker,
+                'buy_trades': result,
+                'total_buys': len(result),
+                'total_amount': sum([t['amount'] for t in result if t['amount']]),
+                'avg_buy_price': avg_buy_price,
+                'current_price': current_price,
+                'potential_return': None  # Would calculate if we had current price
+            })
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/query/trades', methods=['POST'])
+def custom_trade_query():
+    """Custom query builder for trades."""
+    
+    try:
+        filters = request.json or {}
+        
+        with get_session() as session:
+            query = session.query(Trade).join(Filer)
+            
+            # Apply filters
+            if filters.get('ticker'):
+                query = query.filter(Trade.ticker == filters['ticker'].upper())
+            
+            if filters.get('start_date'):
+                query = query.filter(Trade.trade_date >= filters['start_date'])
+            
+            if filters.get('end_date'):
+                query = query.filter(Trade.trade_date <= filters['end_date'])
+            
+            if filters.get('min_amount'):
+                query = query.filter(Trade.amount_usd >= filters['min_amount'])
+            
+            if filters.get('max_amount'):
+                query = query.filter(Trade.amount_usd <= filters['max_amount'])
+            
+            if filters.get('transaction_type'):
+                from src.database.models import TransactionType
+                query = query.filter(Trade.transaction_type == TransactionType[filters['transaction_type']])
+            
+            if filters.get('filer_type'):
+                from src.database.models import FilerType
+                query = query.filter(Filer.filer_type == FilerType[filters['filer_type']])
+            
+            # Limit
+            limit = filters.get('limit', 100)
+            trades = query.order_by(Trade.trade_date.desc()).limit(limit).all()
+            
+            # Format results
+            result = []
+            for t in trades:
+                result.append({
+                    'ticker': t.ticker,
+                    'company': t.company_name,
+                    'insider': t.filer.name if t.filer else 'Unknown',
+                    'date': t.trade_date.isoformat(),
+                    'type': t.transaction_type.value,
+                    'amount': float(t.amount_usd) if t.amount_usd else None,
+                    'price': float(t.price) if t.price else None
+                })
+            
+            return jsonify({
+                'trades': result,
+                'count': len(result),
+                'filters_applied': filters
+            })
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/recommendations')
 def get_recommendations():
     """API endpoint to get portfolio recommendations."""
