@@ -15,6 +15,9 @@ from src.ingestion.politician_scraper import PoliticianScraper
 from src.ingestion.sec_scraper import SECScraper
 from src.ingestion.openinsider_scraper import OpenInsiderScraper
 from src.ingestion.finnhub_scraper import FinnhubScraper
+from src.ingestion.sec_13f_scraper import SEC13FScraper
+from src.ingestion.senate_xml_scraper import SenateXMLScraper
+from src.ingestion.house_pdf_scraper import HousePDFScraper
 from src.ingestion.data_normalizer import DataNormalizer
 from config.config import config
 
@@ -95,6 +98,51 @@ def run_finnhub_ingestion(days: int = 30) -> dict:
         return {"error": str(e)}
 
 
+def run_13f_ingestion(days: int = 90) -> dict:
+    """Run 13F institutional holdings ingestion."""
+    logger = logging.getLogger(__name__)
+    logger.info("Starting 13F institutional holdings ingestion")
+    
+    try:
+        scraper = SEC13FScraper()
+        results = scraper.run_ingestion(mode="recent", days=days)
+        logger.info(f"13F ingestion completed: {results}")
+        return results
+    except Exception as e:
+        logger.error(f"13F ingestion failed: {e}")
+        return {"error": str(e)}
+
+
+def run_senate_xml_ingestion(days: int = 30) -> dict:
+    """Run Senate XML feed ingestion."""
+    logger = logging.getLogger(__name__)
+    logger.info(f"Starting Senate XML ingestion for {days} days")
+    
+    try:
+        scraper = SenateXMLScraper()
+        results = scraper.run_ingestion(mode="recent", days=days)
+        logger.info(f"Senate XML ingestion completed: {results}")
+        return results
+    except Exception as e:
+        logger.error(f"Senate XML ingestion failed: {e}")
+        return {"error": str(e)}
+
+
+def run_house_pdf_ingestion(days: int = 30) -> dict:
+    """Run House PDF scraping."""
+    logger = logging.getLogger(__name__)
+    logger.info(f"Starting House PDF ingestion for {days} days")
+    
+    try:
+        scraper = HousePDFScraper()
+        results = scraper.run_ingestion(mode="recent", days=days)
+        logger.info(f"House PDF ingestion completed: {results}")
+        return results
+    except Exception as e:
+        logger.error(f"House PDF ingestion failed: {e}")
+        return {"error": str(e)}
+
+
 def run_data_normalization() -> dict:
     """Run data normalization."""
     logger = logging.getLogger(__name__)
@@ -115,7 +163,8 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description="Run trading data ingestion")
-    parser.add_argument("--source", choices=["all", "politicians", "sec", "openinsider", "finnhub"], 
+    parser.add_argument("--source", choices=["all", "politicians", "sec", "openinsider", "finnhub", 
+                                             "13f", "senate_xml", "house_pdf", "institutional"], 
                        default="all", help="Data source to ingest")
     parser.add_argument("--days", type=int, default=30,
                        help="Number of days to look back")
@@ -155,8 +204,17 @@ def main():
         if args.source in ["all", "openinsider"]:
             results["openinsider"] = run_openinsider_ingestion(args.days)
         
-        if args.source == "finnhub":
+        if args.source in ["all", "finnhub"]:
             results["finnhub"] = run_finnhub_ingestion(args.days)
+        
+        if args.source in ["all", "13f", "institutional"]:
+            results["13f"] = run_13f_ingestion(90)  # 13F is quarterly
+        
+        if args.source in ["all", "senate_xml"]:
+            results["senate_xml"] = run_senate_xml_ingestion(args.days)
+        
+        if args.source in ["house_pdf"]:
+            results["house_pdf"] = run_house_pdf_ingestion(args.days)
         
         # Run normalization if requested
         if args.normalize:
