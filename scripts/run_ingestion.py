@@ -13,6 +13,8 @@ sys.path.insert(0, str(project_root))
 
 from src.ingestion.politician_scraper import PoliticianScraper
 from src.ingestion.sec_scraper import SECScraper
+from src.ingestion.openinsider_scraper import OpenInsiderScraper
+from src.ingestion.finnhub_scraper import FinnhubScraper
 from src.ingestion.data_normalizer import DataNormalizer
 from config.config import config
 
@@ -63,6 +65,36 @@ def run_sec_ingestion(days: int = 7) -> dict:
         return {"error": str(e)}
 
 
+def run_openinsider_ingestion(days: int = 30) -> dict:
+    """Run OpenInsider scraping."""
+    logger = logging.getLogger(__name__)
+    logger.info(f"Starting OpenInsider ingestion for {days} days")
+    
+    try:
+        scraper = OpenInsiderScraper()
+        results = scraper.run_ingestion(mode="recent", days=days)
+        logger.info(f"OpenInsider ingestion completed: {results}")
+        return results
+    except Exception as e:
+        logger.error(f"OpenInsider ingestion failed: {e}")
+        return {"error": str(e)}
+
+
+def run_finnhub_ingestion(days: int = 30) -> dict:
+    """Run Finnhub API ingestion."""
+    logger = logging.getLogger(__name__)
+    logger.info(f"Starting Finnhub ingestion for {days} days")
+    
+    try:
+        scraper = FinnhubScraper()
+        results = scraper.run_ingestion(mode="recent", days=days)
+        logger.info(f"Finnhub ingestion completed: {results}")
+        return results
+    except Exception as e:
+        logger.error(f"Finnhub ingestion failed: {e}")
+        return {"error": str(e)}
+
+
 def run_data_normalization() -> dict:
     """Run data normalization."""
     logger = logging.getLogger(__name__)
@@ -83,7 +115,7 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description="Run trading data ingestion")
-    parser.add_argument("--source", choices=["all", "politicians", "sec"], 
+    parser.add_argument("--source", choices=["all", "politicians", "sec", "openinsider", "finnhub"], 
                        default="all", help="Data source to ingest")
     parser.add_argument("--days", type=int, default=30,
                        help="Number of days to look back")
@@ -119,6 +151,12 @@ def main():
             # Use fewer days for SEC due to volume
             sec_days = min(args.days, 7)
             results["sec"] = run_sec_ingestion(sec_days)
+        
+        if args.source in ["all", "openinsider"]:
+            results["openinsider"] = run_openinsider_ingestion(args.days)
+        
+        if args.source == "finnhub":
+            results["finnhub"] = run_finnhub_ingestion(args.days)
         
         # Run normalization if requested
         if args.normalize:

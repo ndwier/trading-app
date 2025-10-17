@@ -35,30 +35,66 @@ class DatabaseConfig:
 class APIConfig:
     """API keys and endpoints configuration."""
     
-    # Free APIs (no key required)
-    SEC_EDGAR_BASE_URL = "https://data.sec.gov"
-    OPENINSIDER_BASE_URL = "http://openinsider.com"
-    
-    # Paid APIs (require keys)
+    # ===== POLITICIAN TRADING DATA =====
+    # Quiver Quantitative
     QUIVER_API_KEY = os.getenv("QUIVER_API_KEY")
     QUIVER_BASE_URL = "https://api.quiverquant.com"
+    QUIVER_RATE_LIMIT = 60
     
+    # Finnhub (congress trading + market data)
     FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY")
     FINNHUB_BASE_URL = "https://finnhub.io/api/v1"
-    
-    ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY")
-    ALPHA_VANTAGE_BASE_URL = "https://www.alphavantage.co/query"
-    
-    # Rate limiting (requests per minute)
-    SEC_RATE_LIMIT = 10  # SEC recommends no more than 10 requests per second
-    QUIVER_RATE_LIMIT = 60
     FINNHUB_RATE_LIMIT = 60
     
-    # Request headers
+    # Senate/House official sources (no key needed)
+    SENATE_XML_URL = "https://efdsearch.senate.gov/search/home/"
+    HOUSE_DISCLOSURES_URL = "https://disclosures.house.gov"
+    
+    # ===== CORPORATE INSIDER DATA =====
+    # SEC EDGAR
+    SEC_EDGAR_BASE_URL = "https://data.sec.gov"
+    SEC_RATE_LIMIT = 10  # 10 requests per second max
     SEC_HEADERS = {
         "User-Agent": "TradingApp/1.0 (contact@example.com)",
         "Accept-Encoding": "gzip, deflate"
     }
+    
+    # OpenInsider (no key needed)
+    OPENINSIDER_BASE_URL = "http://openinsider.com"
+    OPENINSIDER_RATE_LIMIT = 30
+    
+    # ===== MARKET DATA =====
+    # Alpha Vantage
+    ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY")
+    ALPHA_VANTAGE_BASE_URL = "https://www.alphavantage.co/query"
+    ALPHA_VANTAGE_RATE_LIMIT = 5  # 5 per minute on free tier
+    
+    # Tiingo
+    TIINGO_API_KEY = os.getenv("TIINGO_API_KEY")
+    TIINGO_BASE_URL = "https://api.tiingo.com"
+    TIINGO_RATE_LIMIT = 500  # 500 per hour on free tier
+    
+    # Polygon.io
+    POLYGON_API_KEY = os.getenv("POLYGON_API_KEY")
+    POLYGON_BASE_URL = "https://api.polygon.io"
+    POLYGON_RATE_LIMIT = 5  # 5 per minute on free tier
+    
+    # IEX Cloud
+    IEX_API_KEY = os.getenv("IEX_API_KEY")
+    IEX_BASE_URL = "https://cloud.iexapis.com"
+    IEX_RATE_LIMIT = 50
+    
+    # ===== ENRICHMENT DATA =====
+    # OpenSecrets (political donations)
+    OPENSECRETS_API_KEY = os.getenv("OPENSECRETS_API_KEY")
+    OPENSECRETS_BASE_URL = "https://www.opensecrets.org/api"
+    
+    # GovTrack (legislative activity)
+    GOVTRACK_BASE_URL = "https://www.govtrack.us/api/v2"
+    
+    # FRED (economic data)
+    FRED_API_KEY = os.getenv("FRED_API_KEY")
+    FRED_BASE_URL = "https://api.stlouisfed.org/fred"
 
 
 @dataclass

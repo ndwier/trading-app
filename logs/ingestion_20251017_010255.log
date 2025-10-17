@@ -1,0 +1,54 @@
+2025-10-17 01:02:55,496 - __main__ - INFO - === Trading Data Ingestion ===
+2025-10-17 01:02:55,496 - __main__ - INFO - Source: finnhub
+2025-10-17 01:02:55,496 - __main__ - INFO - Days: 30
+2025-10-17 01:02:55,496 - __main__ - INFO - Normalize: False
+2025-10-17 01:02:55,496 - __main__ - INFO - Starting Finnhub ingestion for 30 days
+2025-10-17 01:02:55,496 - ingester.finnhub - INFO - Starting finnhub ingestion in recent mode
+2025-10-17 01:02:55,603 - src.database.connection - INFO - Database engine initialized with URL: sqlite:////Users/natewier/Projects/trading-app/data/trading_app.db
+2025-10-17 01:02:55,648 - ingester.finnhub - INFO - Fetched 110 insider trades for AAPL
+2025-10-17 01:02:56,545 - ingester.finnhub - INFO - Fetched 147 insider trades for MSFT
+2025-10-17 01:02:57,822 - ingester.finnhub - INFO - Fetched 594 insider trades for GOOGL
+2025-10-17 01:02:58,576 - ingester.finnhub - INFO - Fetched 328 insider trades for AMZN
+2025-10-17 01:02:59,693 - ingester.finnhub - INFO - Fetched 546 insider trades for NVDA
+2025-10-17 01:03:00,641 - ingester.finnhub - INFO - Fetched 2000 insider trades for META
+2025-10-17 01:03:01,571 - ingester.finnhub - INFO - Fetched 361 insider trades for TSLA
+2025-10-17 01:03:02,573 - ingester.finnhub - INFO - Fetched 196 insider trades for AMD
+2025-10-17 01:03:03,579 - ingester.finnhub - INFO - Fetched 198 insider trades for INTC
+2025-10-17 01:03:04,621 - ingester.finnhub - INFO - Fetched 207 insider trades for ORCL
+2025-10-17 01:03:05,775 - ingester.finnhub - INFO - Fetched 1037 insider trades for CRM
+2025-10-17 01:03:06,663 - ingester.finnhub - INFO - Fetched 442 insider trades for ADBE
+2025-10-17 01:03:07,762 - ingester.finnhub - INFO - Fetched 1541 insider trades for NFLX
+2025-10-17 01:03:08,660 - ingester.finnhub - INFO - Fetched 210 insider trades for JPM
+2025-10-17 01:03:09,615 - ingester.finnhub - INFO - Fetched 559 insider trades for BAC
+2025-10-17 01:03:10,614 - ingester.finnhub - INFO - Fetched 268 insider trades for WFC
+2025-10-17 01:03:11,608 - ingester.finnhub - INFO - Fetched 151 insider trades for GS
+2025-10-17 01:03:12,603 - ingester.finnhub - INFO - Fetched 87 insider trades for MS
+2025-10-17 01:03:13,649 - ingester.finnhub - INFO - Fetched 152 insider trades for C
+2025-10-17 01:03:14,650 - ingester.finnhub - INFO - Fetched 180 insider trades for UNH
+2025-10-17 01:03:15,627 - ingester.finnhub - INFO - Fetched 209 insider trades for JNJ
+2025-10-17 01:03:16,654 - ingester.finnhub - INFO - Fetched 140 insider trades for PFE
+2025-10-17 01:03:17,631 - ingester.finnhub - INFO - Fetched 130 insider trades for ABBV
+2025-10-17 01:03:18,653 - ingester.finnhub - INFO - Fetched 101 insider trades for MRK
+2025-10-17 01:03:19,665 - ingester.finnhub - INFO - Fetched 281 insider trades for TMO
+2025-10-17 01:03:20,691 - ingester.finnhub - INFO - Fetched 265 insider trades for WMT
+2025-10-17 01:03:21,679 - ingester.finnhub - INFO - Fetched 212 insider trades for HD
+2025-10-17 01:03:22,657 - ingester.finnhub - INFO - Fetched 79 insider trades for NKE
+2025-10-17 01:03:23,672 - ingester.finnhub - INFO - Fetched 94 insider trades for COST
+2025-10-17 01:03:24,663 - ingester.finnhub - INFO - Fetched 61 insider trades for TGT
+2025-10-17 01:03:25,663 - ingester.finnhub - INFO - Fetched 112 insider trades for LMT
+2025-10-17 01:03:26,687 - ingester.finnhub - INFO - Fetched 120 insider trades for RTX
+2025-10-17 01:03:27,679 - ingester.finnhub - INFO - Fetched 101 insider trades for BA
+2025-10-17 01:03:28,668 - ingester.finnhub - INFO - Fetched 177 insider trades for NOC
+2025-10-17 01:03:29,665 - ingester.finnhub - INFO - Fetched 223 insider trades for GD
+2025-10-17 01:03:29,665 - ingester.finnhub - INFO - Ingestion completed: 694/694 trades collected in 34.2 seconds
+2025-10-17 01:03:29,665 - __main__ - INFO - Finnhub ingestion completed: {'mode': 'recent', 'trades_processed': 694, 'trades_collected': 694, 'errors': 0, 'runtime_seconds': 34.169308, 'start_time': datetime.datetime(2025, 10, 17, 1, 2, 55, 496417), 'end_time': datetime.datetime(2025, 10, 17, 1, 3, 29, 665725)}
+2025-10-17 01:03:29,669 - __main__ - INFO - 
+==================================================
+2025-10-17 01:03:29,669 - __main__ - INFO - INGESTION SUMMARY
+2025-10-17 01:03:29,669 - __main__ - INFO - ==================================================
+2025-10-17 01:03:29,669 - __main__ - INFO - FINNHUB: 694 trades collected
+2025-10-17 01:03:29,669 - __main__ - INFO - 
+Next steps:
+2025-10-17 01:03:29,669 - __main__ - INFO - 1. Check data quality: python -m src.ingestion.data_normalizer --trades
+2025-10-17 01:03:29,669 - __main__ - INFO - 2. Run backtests: python -m src.backtesting.backtester
+2025-10-17 01:03:29,669 - __main__ - INFO - 3. View dashboard: python app.py

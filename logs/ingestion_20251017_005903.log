@@ -1,0 +1,23 @@
+2025-10-17 00:59:03,474 - __main__ - INFO - === Trading Data Ingestion ===
+2025-10-17 00:59:03,474 - __main__ - INFO - Source: openinsider
+2025-10-17 00:59:03,474 - __main__ - INFO - Days: 7
+2025-10-17 00:59:03,474 - __main__ - INFO - Normalize: False
+2025-10-17 00:59:03,474 - __main__ - INFO - Starting OpenInsider ingestion for 7 days
+2025-10-17 00:59:03,474 - ingester.openinsider - INFO - Starting openinsider ingestion in recent mode
+2025-10-17 00:59:03,539 - ingester.openinsider - INFO - Fetched 47 trades from homepage
+2025-10-17 00:59:05,563 - ingester.openinsider - INFO - Fetched 100 trades from latest-insider-trading
+2025-10-17 00:59:07,556 - ingester.openinsider - INFO - Fetched 100 trades from latest-cluster-buys
+2025-10-17 00:59:09,551 - ingester.openinsider - INFO - Fetched 64 trades from top-insider-purchases-by-value
+2025-10-17 00:59:09,572 - src.database.connection - INFO - Database engine initialized with URL: sqlite:////Users/natewier/Projects/trading-app/data/trading_app.db
+2025-10-17 00:59:09,691 - ingester.openinsider - INFO - Ingestion completed: 132/132 trades collected in 6.2 seconds
+2025-10-17 00:59:09,691 - __main__ - INFO - OpenInsider ingestion completed: {'mode': 'recent', 'trades_processed': 132, 'trades_collected': 132, 'errors': 0, 'runtime_seconds': 6.217236, 'start_time': datetime.datetime(2025, 10, 17, 0, 59, 3, 474436), 'end_time': datetime.datetime(2025, 10, 17, 0, 59, 9, 691672)}
+2025-10-17 00:59:09,691 - __main__ - INFO - 
+==================================================
+2025-10-17 00:59:09,691 - __main__ - INFO - INGESTION SUMMARY
+2025-10-17 00:59:09,691 - __main__ - INFO - ==================================================
+2025-10-17 00:59:09,692 - __main__ - INFO - OPENINSIDER: 132 trades collected
+2025-10-17 00:59:09,692 - __main__ - INFO - 
+Next steps:
+2025-10-17 00:59:09,692 - __main__ - INFO - 1. Check data quality: python -m src.ingestion.data_normalizer --trades
+2025-10-17 00:59:09,692 - __main__ - INFO - 2. Run backtests: python -m src.backtesting.backtester
+2025-10-17 00:59:09,692 - __main__ - INFO - 3. View dashboard: python app.py

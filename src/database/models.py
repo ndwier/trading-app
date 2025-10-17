@@ -31,8 +31,11 @@ class TransactionType(Enum):
     SELL = "sell"
     OPTION_BUY = "option_buy"
     OPTION_SELL = "option_sell"
+    OPTION_EXERCISE = "option_exercise"
     GIFT = "gift"
+    AWARD = "award"
     EXCHANGE = "exchange"
+    OTHER = "other"
 
 
 class DataSource(Enum):
