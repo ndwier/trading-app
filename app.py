@@ -1071,6 +1071,150 @@ def run_backtest_api():
         return jsonify({'error': str(e)}), 500
 
 
+# ============================================================================
+# BROKER API ENDPOINTS
+# ============================================================================
+
+@app.route('/api/brokers/status')
+def brokers_status():
+    """Get status of all configured brokers."""
+    try:
+        from src.brokers import get_broker_manager
+        
+        manager = get_broker_manager()
+        statuses = manager.get_all_statuses()
+        
+        return jsonify({
+            'brokers': statuses,
+            'active_broker': manager.active_broker
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/brokers/connect', methods=['POST'])
+def brokers_connect():
+    """Initiate broker authentication."""
+    try:
+        from src.brokers import get_broker_manager
+        
+        data = request.get_json()
+        broker_name = data.get('broker')
+        
+        if not broker_name:
+            return jsonify({'error': 'broker name required'}), 400
+        
+        manager = get_broker_manager()
+        result = manager.authenticate_broker(broker_name)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/brokers/set_active', methods=['POST'])
+def brokers_set_active():
+    """Set the active broker."""
+    try:
+        from src.brokers import get_broker_manager
+        
+        data = request.get_json()
+        broker_name = data.get('broker')
+        
+        if not broker_name:
+            return jsonify({'error': 'broker name required'}), 400
+        
+        manager = get_broker_manager()
+        success = manager.set_active_broker(broker_name)
+        
+        if success:
+            return jsonify({'success': True, 'active_broker': broker_name})
+        else:
+            return jsonify({'error': 'Broker not found'}), 404
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/brokers/positions')
+def brokers_positions():
+    """Get positions from active broker."""
+    try:
+        from src.brokers import get_broker_manager
+        
+        broker_name = request.args.get('broker')
+        manager = get_broker_manager()
+        
+        positions = manager.get_positions(broker_name)
+        
+        return jsonify({
+            'positions': positions,
+            'broker': broker_name or manager.active_broker
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/brokers/preview', methods=['POST'])
+def brokers_preview_order():
+    """Preview an order based on a signal."""
+    try:
+        from src.brokers import get_broker_manager
+        
+        data = request.get_json()
+        signal = data.get('signal')
+        broker_name = data.get('broker')
+        
+        if not signal:
+            return jsonify({'error': 'signal required'}), 400
+        
+        manager = get_broker_manager()
+        preview = manager.preview_signal_order(signal, broker_name)
+        
+        return jsonify(preview)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/brokers/execute', methods=['POST'])
+def brokers_execute_order():
+    """Execute an order based on a signal."""
+    try:
+        from src.brokers import get_broker_manager
+        
+        data = request.get_json()
+        signal = data.get('signal')
+        broker_name = data.get('broker')
+        quantity = data.get('quantity')
+        
+        if not signal:
+            return jsonify({'error': 'signal required'}), 400
+        
+        manager = get_broker_manager()
+        result = manager.execute_signal(signal, broker_name, quantity)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({'error': 'Not found'}), 404

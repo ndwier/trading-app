@@ -42,6 +42,9 @@
             <button class="tab-btn" onclick="showTab('query')" id="queryTab">
                 🔍 Query Builder
             </button>
+            <button class="tab-btn" onclick="showTab('broker')" id="brokerTab">
+                🏦 Broker
+            </button>
         </div>
 
         <!-- Signals Tab -->
@@ -175,6 +178,80 @@
             <div id="queryResults" style="margin-top: 2rem;">
                 <div style="text-align: center; padding: 4rem 2rem; color: var(--text-secondary);">
                     Configure your filters and click "Run Query" to see results
+                </div>
+            </div>
+        </div>
+
+        <!-- Broker Tab -->
+        <div id="brokerContent" style="display: none;">
+            <div style="margin-bottom: 2rem;">
+                <h2 style="margin: 0 0 1rem 0; color: var(--text-primary);">🏦 Broker Connections</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+                    Connect your brokerage accounts to execute trades directly from signals. 
+                    <strong>Note:</strong> OAuth authentication requires manual setup - see documentation.
+                </p>
+                
+                <!-- Broker Status Cards -->
+                <div id="brokerStatusCards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                    <div class="loading">Loading broker status...</div>
+                </div>
+                
+                <!-- Account Positions (if authenticated) -->
+                <div id="brokerPositions" style="display: none;">
+                    <h3 style="margin: 2rem 0 1rem 0; color: var(--text-primary);">📊 Current Positions</h3>
+                    <div class="table-container">
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Quantity</th>
+                                    <th>Avg Price</th>
+                                    <th>Current Price</th>
+                                    <th>Market Value</th>
+                                    <th>Unrealized P/L</th>
+                                    <th>Return %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="positionsTableBody">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                                        No positions loaded
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Setup Instructions -->
+                <div style="margin-top: 2rem; padding: 1.5rem; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color);">
+                    <h3 style="margin: 0 0 1rem 0; color: var(--text-primary);">📝 Setup Instructions</h3>
+                    <div style="color: var(--text-secondary); line-height: 1.6;">
+                        <p><strong>Schwab Trader API:</strong></p>
+                        <ol>
+                            <li>Register at <a href="https://developer.schwab.com/" target="_blank" style="color: var(--accent-color);">developer.schwab.com</a></li>
+                            <li>Create an app and get your App Key & Secret</li>
+                            <li>Add to <code>.env</code>: <code>SCHWAB_APP_KEY</code>, <code>SCHWAB_APP_SECRET</code></li>
+                            <li>Run OAuth flow to authenticate (see documentation)</li>
+                        </ol>
+                        
+                        <p style="margin-top: 1.5rem;"><strong>E*TRADE API:</strong></p>
+                        <ol>
+                            <li>Register at <a href="https://developer.etrade.com/" target="_blank" style="color: var(--accent-color);">developer.etrade.com</a></li>
+                            <li>Create an app and get your Consumer Key & Secret</li>
+                            <li>Add to <code>.env</code>: <code>ETRADE_CONSUMER_KEY</code>, <code>ETRADE_CONSUMER_SECRET</code></li>
+                            <li>Set <code>ETRADE_SANDBOX=true</code> for testing</li>
+                            <li>Run OAuth flow to authenticate (see documentation)</li>
+                        </ol>
+                        
+                        <p style="margin-top: 1.5rem;"><strong>⚠️ Important:</strong></p>
+                        <ul>
+                            <li>OAuth authentication requires browser interaction and cannot be fully automated</li>
+                            <li>Start with sandbox/paper trading accounts for testing</li>
+                            <li>Never commit API keys to version control</li>
+                            <li>Review all orders before execution</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
@@ -766,18 +843,20 @@
         function showTab(tab) {
             const signalsTab = document.getElementById('signalsTab');
             const queryTab = document.getElementById('queryTab');
+            const brokerTab = document.getElementById('brokerTab');
             const signalsContent = document.getElementById('signalsContent');
             const queryContent = document.getElementById('queryContent');
+            const brokerContent = document.getElementById('brokerContent');
+
+            // Reset all tabs
+            [signalsTab, queryTab, brokerTab].forEach(t => t?.classList.remove('active'));
+            [signalsContent, queryContent, brokerContent].forEach(c => c ? c.style.display = 'none' : null);
 
             if (tab === 'signals') {
                 signalsTab.classList.add('active');
-                queryTab.classList.remove('active');
                 signalsContent.style.display = 'block';
-                queryContent.style.display = 'none';
-            } else {
-                signalsTab.classList.remove('active');
+            } else if (tab === 'query') {
                 queryTab.classList.add('active');
-                signalsContent.style.display = 'none';
                 queryContent.style.display = 'block';
                 
                 // Set default dates
@@ -787,6 +866,10 @@
                     document.getElementById('queryEndDate').value = today;
                     document.getElementById('queryStartDate').value = ninetyDaysAgo;
                 }
+            } else if (tab === 'broker') {
+                brokerTab.classList.add('active');
+                brokerContent.style.display = 'block';
+                loadBrokerStatus();
             }
         }
 
@@ -924,6 +1007,152 @@
         }
 
         // Initialize
+        // ========================================================================
+        // BROKER FUNCTIONS
+        // ========================================================================
+
+        async function loadBrokerStatus() {
+            const container = document.getElementById('brokerStatusCards');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+            try {
+                const response = await fetch('/api/brokers/status');
+                const data = await response.json();
+
+                if (!data.brokers || data.brokers.length === 0) {
+                    container.innerHTML = `
+                        <div style="padding: 2rem; text-align: center; color: var(--text-secondary); grid-column: 1/-1;">
+                            ⚠️ No brokers configured. Add API keys to your .env file to get started.
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = data.brokers.map(broker => `
+                    <div style="background: var(--bg-card); border-radius: 12px; padding: 1.5rem; border: 1px solid var(--border-color);">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                            <div>
+                                <h3 style="margin: 0 0 0.5rem 0; font-size: 1.25rem; text-transform: capitalize; color: var(--text-primary);">
+                                    ${broker.name === 'schwab' ? '🏦 Schwab' : '💼 E*TRADE'}
+                                </h3>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="width: 8px; height: 8px; border-radius: 50%; background: ${broker.connected ? 'var(--success-color)' : 'var(--text-secondary)'}; display: inline-block;"></span>
+                                    <span style="color: var(--text-secondary); font-size: 0.875rem;">
+                                        ${broker.connected ? 'Connected' : 'Not Connected'}
+                                    </span>
+                                </div>
+                            </div>
+                            ${broker.active ? '<span style="background: var(--accent-color); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">ACTIVE</span>' : ''}
+                        </div>
+
+                        ${broker.connected && broker.account ? `
+                            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                                <div style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.5rem;">Account Info:</div>
+                                <div style="color: var(--text-primary);">
+                                    ${broker.account.account_id || broker.account.accountId || 'Account Connected'}
+                                </div>
+                            </div>
+                        ` : `
+                            <div style="margin-top: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; color: var(--text-secondary); font-size: 0.875rem;">
+                                OAuth authentication required. See setup instructions below.
+                            </div>
+                        `}
+
+                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                            ${!broker.active ? `
+                                <button class="btn btn-secondary" style="flex: 1; font-size: 0.875rem; padding: 0.5rem;" onclick="setActiveBroker('${broker.name}')">
+                                    Set Active
+                                </button>
+                            ` : ''}
+                            ${broker.connected ? `
+                                <button class="btn btn-primary" style="flex: 1; font-size: 0.875rem; padding: 0.5rem;" onclick="loadBrokerPositions('${broker.name}')">
+                                    📊 View Positions
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Error loading broker status:', error);
+                container.innerHTML = `
+                    <div style="padding: 2rem; text-align: center; color: var(--error-color); grid-column: 1/-1;">
+                        ❌ Error loading broker status: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function setActiveBroker(brokerName) {
+            try {
+                const response = await fetch('/api/brokers/set_active', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({broker: brokerName})
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(`✅ ${brokerName.toUpperCase()} is now the active broker`);
+                    loadBrokerStatus();
+                } else {
+                    alert(`❌ Error: ${result.error}`);
+                }
+            } catch (error) {
+                alert(`❌ Error setting active broker: ${error.message}`);
+            }
+        }
+
+        async function loadBrokerPositions(brokerName) {
+            const positionsDiv = document.getElementById('brokerPositions');
+            const tbody = document.getElementById('positionsTableBody');
+
+            positionsDiv.style.display = 'block';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading positions...</td></tr>';
+
+            try {
+                const url = brokerName ? `/api/brokers/positions?broker=${brokerName}` : '/api/brokers/positions';
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.error) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--error-color);">${data.error}</td></tr>`;
+                    return;
+                }
+
+                if (!data.positions || data.positions.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No positions found</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.positions.map(pos => {
+                    const returnPct = ((pos.current_price - pos.average_price) / pos.average_price * 100).toFixed(2);
+                    const isProfit = returnPct >= 0;
+
+                    return `
+                        <tr>
+                            <td><strong>${pos.symbol}</strong></td>
+                            <td>${pos.quantity}</td>
+                            <td>${formatCurrency(pos.average_price)}</td>
+                            <td>${formatCurrency(pos.current_price)}</td>
+                            <td>${formatCurrency(pos.market_value)}</td>
+                            <td style="color: ${isProfit ? 'var(--success-color)' : 'var(--error-color)'}">
+                                ${isProfit ? '+' : ''}${formatCurrency(pos.unrealized_pl)}
+                            </td>
+                            <td style="color: ${isProfit ? 'var(--success-color)' : 'var(--error-color)'}">
+                                ${isProfit ? '+' : ''}${returnPct}%
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error loading positions:', error);
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--error-color);">Error: ${error.message}</td></tr>`;
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             loadStats();
             loadSignals();
