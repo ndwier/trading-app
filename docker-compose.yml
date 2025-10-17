@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # Main application
+  trading-app:
+    build: .
+    container_name: trading-app
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./.env:/app/.env:ro
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    networks:
+      - trading-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Nightly data collection service
+  data-collector:
+    build: .
+    container_name: trading-data-collector
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./.env:/app/.env:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: >
+      sh -c "
+        while true; do
+          echo '[$(date)] Running nightly data collection...';
+          python scripts/run_ingestion.py --source finnhub --days 7;
+          python scripts/run_ingestion.py --source openinsider --days 7;
+          python scripts/generate_signals.py --portfolio-value 100000 --risk-tolerance moderate --top-n 20;
+          echo '[$(date)] Collection complete. Sleeping for 24 hours...';
+          sleep 86400;
+        done
+      "
+    restart: unless-stopped
+    networks:
+      - trading-network
+    depends_on:
+      - trading-app
+
+  # PostgreSQL database (optional - for production use)
+  # Uncomment if you want to use PostgreSQL instead of SQLite
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: trading-postgres
+  #   environment:
+  #     POSTGRES_USER: trading_user
+  #     POSTGRES_PASSWORD: your_secure_password
+  #     POSTGRES_DB: trading_db
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   networks:
+  #     - trading-network
+  #   restart: unless-stopped
+
+networks:
+  trading-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+
