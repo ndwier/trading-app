@@ -545,10 +545,33 @@
                         ${badges.length > 0 ? `<span style="background: var(--bg-card); padding: 0.5rem 1rem; border-radius: 8px; color: var(--text-secondary);">${badges.join(' • ')}</span>` : ''}
                     </div>
                     
+                    ${data.bio ? `
+                        <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
+                            <h3 style="margin: 0 0 1rem 0; color: var(--accent-blue);">👤 Biography</h3>
+                            <div style="line-height: 1.8; color: var(--text-secondary);">
+                                ${data.bio}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${data.committees && data.committees.length > 0 ? `
+                        <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
+                            <h3 style="margin: 0 0 1rem 0; color: var(--accent-blue);">🏛️ Committee Assignments</h3>
+                            <div style="display: grid; gap: 0.5rem;">
+                                ${data.committees.map(c => 
+                                    `<div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px; border-left: 3px solid var(--accent-green);">
+                                        <strong>${c.name}</strong>
+                                        ${c.role ? ` - ${c.role}` : ''}
+                                    </div>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
                     <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
                         <h3 style="margin: 0 0 1rem 0; color: var(--accent-blue);">💡 Why This Matters</h3>
                         <div style="line-height: 1.8; color: var(--text-secondary);">
-                            ${data.significance}
+                            ${data.significance || 'Their position provides access to non-public information that can influence trading decisions.'}
                         </div>
                     </div>
                     

@@ -456,6 +456,19 @@ def get_insider_info(name):
             # Get unique tickers
             tickers = list(set([t.ticker for t in trades if t.ticker]))
             
+            # Get REAL enriched data about this person
+            try:
+                from src.enrichment import get_enriched_insider_data
+                enriched = get_enriched_insider_data(
+                    name=filer.name,
+                    filer_type=filer.filer_type.value,
+                    company=filer.company,
+                    state=filer.state
+                )
+            except Exception as e:
+                logger.error(f"Enrichment failed for {filer.name}: {e}")
+                enriched = {}
+            
             # Build bio/description
             role_parts = []
             if filer.title:
@@ -468,16 +481,25 @@ def get_insider_info(name):
                 role_parts.append(f"({filer.party})")
             
             role = " ".join(role_parts) if role_parts else filer.filer_type.value
-            significance = f"{filer.name} is a {role}"
             
-            if filer.filer_type.value == 'POLITICIAN':
-                significance += " with direct influence on policy and legislation. Politician trades often precede significant regulatory changes."
-            elif filer.filer_type.value == 'CORPORATE_INSIDER':
-                significance += " with insider knowledge of company operations, upcoming products, and financial performance."
-            elif filer.filer_type.value == 'INSTITUTIONAL_INVESTOR':
-                significance += " managing billions in assets. Their moves often signal major market shifts."
-            else:
-                significance += ". Their trading patterns may indicate valuable market insights."
+            # Use enriched data if available
+            bio = enriched.get('bio')
+            committees = enriched.get('committees', [])
+            leadership = enriched.get('leadership')
+            significance = enriched.get('why_matters')
+            
+            # Fallback to generic if enrichment failed
+            if not significance:
+                significance = f"{filer.name} is a {role}"
+                
+                if filer.filer_type.value == 'politician':
+                    significance += " with direct influence on policy and legislation. Politician trades often precede significant regulatory changes."
+                elif filer.filer_type.value == 'corporate_insider':
+                    significance += " with insider knowledge of company operations, upcoming products, and financial performance."
+                elif filer.filer_type.value == 'institutional_investor':
+                    significance += " managing billions in assets. Their moves often signal major market shifts."
+                else:
+                    significance += ". Their trading patterns may indicate valuable market insights."
             
             # Recent activity summary
             if buy_trades:
@@ -496,6 +518,9 @@ def get_insider_info(name):
                 'state': filer.state,
                 'party': filer.party,
                 'significance': significance,
+                'bio': bio,  # NEW: Real biographical data
+                'committees': committees,  # NEW: Committee memberships
+                'leadership': leadership,  # NEW: Leadership positions
                 'total_trades': len(trades),
                 'buy_trades': len(buy_trades),
                 'sell_trades': len(sell_trades),
