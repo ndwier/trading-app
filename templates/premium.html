@@ -362,6 +362,11 @@
                     const card = createSignalCard(signal, index);
                     grid.appendChild(card);
                 });
+                
+                // Load backtest badges for all signals
+                allSignals.forEach(signal => {
+                    loadBacktestBadge(signal.ticker);
+                });
 
             } catch (error) {
                 console.error('Error loading signals:', error);
@@ -387,7 +392,12 @@
                     <div class="strength-badge">${signal.strength.toFixed(0)}%</div>
                 </div>
                 
-                <span class="signal-type ${signal.signal_type}">${signal.signal_type}</span>
+                <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem;">
+                    <span class="signal-type ${signal.signal_type}">${signal.signal_type}</span>
+                    <span id="backtest_badge_${signal.ticker}" style="font-size: 0.7rem; padding: 0.2rem 0.5rem; 
+                          background: rgba(100,100,100,0.2); color: var(--text-secondary); 
+                          border-radius: 12px; opacity: 0.6;">⏳</span>
+                </div>
                 
                 <div class="insider-info">
                     <div class="info-item">
@@ -565,7 +575,7 @@
                         </div>
                         
                         <!-- Hold Time Recommendation -->
-                        <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                        <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 1.5rem;">
                             <h3 style="margin: 0 0 1rem 0; font-size: 1.2rem; color: var(--accent-blue);">⏰ Hold Time Recommendation</h3>
                             <div style="font-size: 2rem; font-weight: 700; color: var(--accent-yellow); margin-bottom: 0.5rem;">
                                 ${data.hold_time.recommended_days} days
@@ -574,12 +584,255 @@
                                 ${data.hold_time.explanation}
                             </div>
                         </div>
+                        
+                        <!-- Historical Backtest Performance -->
+                        <div id="backtestSection_${data.ticker}" style="background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(168, 85, 247, 0.1)); 
+                                 padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.3);">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                                <h3 style="margin: 0; font-size: 1.2rem; color: var(--accent-blue);">
+                                    🎯 Historical Performance
+                                </h3>
+                                <span style="background: rgba(56, 189, 248, 0.2); padding: 0.25rem 0.75rem; 
+                                       border-radius: 20px; font-size: 0.75rem; color: var(--accent-blue);">
+                                    BACKTESTED
+                                </span>
+                            </div>
+                            <div class="loading-mini" style="text-align: center; padding: 2rem;">
+                                <div style="color: var(--text-secondary);">Loading historical data...</div>
+                            </div>
+                        </div>
                     </div>
                 `;
+                
+                // Load backtesting data asynchronously
+                loadBacktestData(data.ticker);
                 
             } catch (error) {
                 console.error('Error loading details:', error);
                 content.innerHTML = `<div style="color: var(--accent-red);">Failed to load details</div>`;
+            }
+        }
+        
+        async function loadBacktestData(ticker) {
+            try {
+                const response = await fetch(`/api/backtest/ticker/${ticker}/quick`);
+                const backtest = await response.json();
+                
+                const section = document.getElementById(`backtestSection_${ticker}`);
+                if (!section) return;
+                
+                if (backtest.error) {
+                    section.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                            <h3 style="margin: 0; font-size: 1.2rem; color: var(--accent-blue);">
+                                🎯 Historical Performance
+                            </h3>
+                        </div>
+                        <div style="color: var(--text-secondary); text-align: center; padding: 1rem;">
+                            ${backtest.error}
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Get 30-day stats as default
+                const stats30d = backtest.aggregate_stats['30d'] || {};
+                const stats7d = backtest.aggregate_stats['7d'] || {};
+                const stats14d = backtest.aggregate_stats['14d'] || {};
+                
+                // Determine quality badge
+                let qualityBadge = '';
+                let qualityColor = '';
+                if (stats30d.win_rate >= 80) {
+                    qualityBadge = 'EXCELLENT TRACK RECORD';
+                    qualityColor = 'var(--accent-green)';
+                } else if (stats30d.win_rate >= 70) {
+                    qualityBadge = 'STRONG TRACK RECORD';
+                    qualityColor = 'var(--accent-blue)';
+                } else if (stats30d.win_rate >= 60) {
+                    qualityBadge = 'GOOD TRACK RECORD';
+                    qualityColor = 'var(--accent-yellow)';
+                } else if (stats30d.win_rate >= 50) {
+                    qualityBadge = 'AVERAGE';
+                    qualityColor = 'var(--text-secondary)';
+                } else {
+                    qualityBadge = 'POOR TRACK RECORD';
+                    qualityColor = 'var(--accent-red)';
+                }
+                
+                section.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <h3 style="margin: 0; font-size: 1.2rem; color: var(--accent-blue);">
+                                🎯 Historical Performance
+                            </h3>
+                            <span style="background: rgba(56, 189, 248, 0.2); padding: 0.25rem 0.75rem; 
+                                   border-radius: 20px; font-size: 0.75rem; color: var(--accent-blue);">
+                                BACKTESTED
+                            </span>
+                        </div>
+                        <span style="background: ${qualityColor}22; color: ${qualityColor}; 
+                               padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">
+                            ${qualityBadge}
+                        </span>
+                    </div>
+                    
+                    <div style="background: rgba(0,0,0,0.3); padding: 1.25rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                            Following ${ticker} insider trades historically has returned:
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 1.75rem; font-weight: 700; color: ${stats7d.avg_return >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">
+                                    ${stats7d.avg_return >= 0 ? '+' : ''}${stats7d.avg_return}%
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                                    7 days
+                                </div>
+                                <div style="font-size: 0.75rem; color: ${stats7d.win_rate >= 70 ? 'var(--accent-green)' : stats7d.win_rate >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)'};">
+                                    ${stats7d.win_rate}% win
+                                </div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 1.75rem; font-weight: 700; color: ${stats14d.avg_return >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">
+                                    ${stats14d.avg_return >= 0 ? '+' : ''}${stats14d.avg_return}%
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                                    14 days
+                                </div>
+                                <div style="font-size: 0.75rem; color: ${stats14d.win_rate >= 70 ? 'var(--accent-green)' : stats14d.win_rate >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)'};">
+                                    ${stats14d.win_rate}% win
+                                </div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 1.75rem; font-weight: 700; color: ${stats30d.avg_return >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">
+                                    ${stats30d.avg_return >= 0 ? '+' : ''}${stats30d.avg_return}%
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                                    30 days
+                                </div>
+                                <div style="font-size: 0.75rem; color: ${stats30d.win_rate >= 70 ? 'var(--accent-green)' : stats30d.win_rate >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)'};">
+                                    ${stats30d.win_rate}% win
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem;">
+                        <div style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px;">
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                                Best Trade (30d)
+                            </div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent-green);">
+                                +${stats30d.best_return}%
+                            </div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px;">
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                                Worst Trade (30d)
+                            </div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: ${stats30d.worst_return >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">
+                                ${stats30d.worst_return >= 0 ? '+' : ''}${stats30d.worst_return}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; 
+                                border-left: 3px solid ${qualityColor};">
+                        <div style="font-size: 0.875rem; line-height: 1.6; color: var(--text-secondary);">
+                            ${getBacktestRecommendation(stats30d, backtest.total_trades_analyzed)}
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                            Based on ${backtest.total_trades_analyzed} historical insider trades
+                        </div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error loading backtest:', error);
+                const section = document.getElementById(`backtestSection_${ticker}`);
+                if (section) {
+                    section.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                            <h3 style="margin: 0; font-size: 1.2rem; color: var(--accent-blue);">
+                                🎯 Historical Performance
+                            </h3>
+                        </div>
+                        <div style="color: var(--text-secondary); text-align: center; padding: 1rem;">
+                            Unable to load historical data
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        function getBacktestRecommendation(stats, totalTrades) {
+            const winRate = stats.win_rate || 0;
+            const avgReturn = stats.avg_return || 0;
+            
+            if (winRate >= 80 && avgReturn >= 10) {
+                return `<strong style="color: var(--accent-green);">🚀 STRONG BUY:</strong> Following ${totalTrades} insider trades in this ticker has been highly profitable with an ${winRate}% win rate and average ${avgReturn}% return. This is an excellent signal to follow.`;
+            } else if (winRate >= 70 && avgReturn >= 5) {
+                return `<strong style="color: var(--accent-blue);">✅ BUY:</strong> Historical data shows ${winRate}% of insider trades were profitable with ${avgReturn}% average return over ${totalTrades} trades. Positive track record supports this signal.`;
+            } else if (winRate >= 60) {
+                return `<strong style="color: var(--accent-yellow);">👍 CONSIDER:</strong> Based on ${totalTrades} trades, insiders have a ${winRate}% win rate. Decent but not exceptional performance. Consider as part of diversified strategy.`;
+            } else if (winRate >= 50) {
+                return `<strong style="color: var(--text-secondary);">⚠️ NEUTRAL:</strong> Mixed results with ${winRate}% win rate. Following insiders in this ticker has shown average performance. Use caution.`;
+            } else {
+                return `<strong style="color: var(--accent-red);">❌ CAUTION:</strong> Historical data shows only ${winRate}% win rate. Following insider trades in this ticker has not been consistently profitable. Consider alternative opportunities.`;
+            }
+        }
+        
+        async function loadBacktestBadge(ticker) {
+            const badge = document.getElementById(`backtest_badge_${ticker}`);
+            if (!badge) return;
+            
+            try {
+                const response = await fetch(`/api/backtest/ticker/${ticker}/quick`);
+                const backtest = await response.json();
+                
+                if (backtest.error || !backtest.aggregate_stats || !backtest.aggregate_stats['30d']) {
+                    badge.style.display = 'none';
+                    return;
+                }
+                
+                const stats = backtest.aggregate_stats['30d'];
+                const winRate = stats.win_rate || 0;
+                const avgReturn = stats.avg_return || 0;
+                
+                let badgeText = '';
+                let badgeColor = '';
+                let badgeBackground = '';
+                
+                if (winRate >= 80 && avgReturn >= 10) {
+                    badgeText = '✅ PROVEN';
+                    badgeColor = 'var(--accent-green)';
+                    badgeBackground = 'rgba(34, 197, 94, 0.2)';
+                } else if (winRate >= 70 && avgReturn >= 5) {
+                    badgeText = '✅ STRONG';
+                    badgeColor = 'var(--accent-blue)';
+                    badgeBackground = 'rgba(56, 189, 248, 0.2)';
+                } else if (winRate >= 60) {
+                    badgeText = '👍 GOOD';
+                    badgeColor = 'var(--accent-yellow)';
+                    badgeBackground = 'rgba(250, 204, 21, 0.2)';
+                } else {
+                    // Don't show badge for average or poor performance
+                    badge.style.display = 'none';
+                    return;
+                }
+                
+                badge.textContent = badgeText;
+                badge.style.color = badgeColor;
+                badge.style.background = badgeBackground;
+                badge.style.opacity = '1';
+                badge.title = `Win Rate: ${winRate}%, Avg Return: ${avgReturn >= 0 ? '+' : ''}${avgReturn}% (30d)`;
+                
+            } catch (error) {
+                badge.style.display = 'none';
             }
         }
 
