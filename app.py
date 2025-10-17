@@ -1571,7 +1571,7 @@ def get_price_history(ticker):
                 trade_list.append({
                     'date': t.trade_date,
                     'type': t.transaction_type.value if hasattr(t.transaction_type, 'value') else str(t.transaction_type),
-                    'price': float(t.price_per_share) if t.price_per_share else None,
+                    'price': float(t.price) if t.price else None,
                     'amount': float(t.amount_usd) if t.amount_usd else 0,
                     'insider': t.filer.name if t.filer else 'Unknown'
                 })
@@ -1603,10 +1603,10 @@ def get_entry_quality(ticker):
             
             trade_list = []
             for t in buy_trades:
-                if t.price_per_share:
+                if t.price:
                     trade_list.append({
                         'date': t.trade_date,
-                        'price': float(t.price_per_share),
+                        'price': float(t.price),
                         'amount': float(t.amount_usd) if t.amount_usd else 0,
                         'insider': t.filer.name if t.filer else 'Unknown'
                     })
@@ -1641,6 +1641,118 @@ def get_batch_prices():
         results = service.get_batch_prices([t.upper() for t in tickers])
         
         return jsonify(results)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================================================
+# BACKTESTING ANALYSIS ENDPOINTS
+# ============================================================================
+
+@app.route('/api/backtest/ticker/<ticker>')
+def backtest_ticker(ticker):
+    """Get comprehensive backtest analysis for a ticker's insider trades."""
+    try:
+        from src.backtesting import TradeBacktester
+        
+        # Get insider trades for this ticker
+        with get_session() as session:
+            from src.database.models import TransactionType
+            
+            trades = session.query(Trade).filter(
+                Trade.ticker == ticker.upper(),
+                Trade.transaction_type.in_([TransactionType.BUY, TransactionType.OPTION_BUY])
+            ).order_by(Trade.trade_date.desc()).limit(50).all()
+            
+            if not trades:
+                return jsonify({'error': 'No insider buy trades found'}), 404
+            
+            trade_list = []
+            for t in trades:
+                trade_list.append({
+                    'date': t.trade_date,
+                    'price': float(t.price) if t.price else None,
+                    'amount': float(t.amount_usd) if t.amount_usd else 0,
+                    'insider': t.filer.name if t.filer else 'Unknown'
+                })
+        
+        backtester = TradeBacktester()
+        analysis = backtester.get_comprehensive_analysis(ticker.upper(), trade_list)
+        
+        return jsonify(analysis)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/backtest/ticker/<ticker>/quick')
+def backtest_ticker_quick(ticker):
+    """Get quick backtest summary (faster, less detailed)."""
+    try:
+        from src.backtesting import TradeBacktester
+        from src.database.models import TransactionType
+        
+        # Get recent insider buys
+        with get_session() as session:
+            trades = session.query(Trade).filter(
+                Trade.ticker == ticker.upper(),
+                Trade.transaction_type.in_([TransactionType.BUY, TransactionType.OPTION_BUY]),
+                Trade.trade_date >= datetime.now() - timedelta(days=365)
+            ).order_by(Trade.trade_date.desc()).limit(20).all()
+            
+            if not trades:
+                return jsonify({'error': 'No recent insider buy trades found'}), 404
+            
+            trade_list = []
+            for t in trades:
+                # Include all trades, even without prices (backtester will use market price on trade date)
+                trade_list.append({
+                    'date': t.trade_date,
+                    'price': float(t.price) if t.price else None,
+                    'amount': float(t.amount_usd) if t.amount_usd else 0,
+                    'insider': t.filer.name if t.filer else 'Unknown'
+                })
+        
+        if not trade_list:
+            return jsonify({'error': 'No insider trades found'}), 404
+        
+        backtester = TradeBacktester()
+        
+        # Just get backtest results (skip timing and benchmark)
+        results = backtester.backtest_ticker_history(ticker.upper(), trade_list)
+        
+        return jsonify(results)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/backtest/trade')
+def backtest_single_trade():
+    """Backtest a single trade."""
+    try:
+        from src.backtesting import TradeBacktester
+        
+        ticker = request.args.get('ticker', '').upper()
+        date = request.args.get('date')  # YYYY-MM-DD
+        price = request.args.get('price', type=float)
+        
+        if not ticker or not date:
+            return jsonify({'error': 'ticker and date required'}), 400
+        
+        trade_date = datetime.strptime(date, '%Y-%m-%d')
+        
+        backtester = TradeBacktester()
+        result = backtester.backtest_trade(ticker, trade_date, price)
+        
+        return jsonify(result)
         
     except Exception as e:
         import traceback
@@ -1802,7 +1914,7 @@ def export_trades_csv():
                     trade.transaction_type.value if hasattr(trade.transaction_type, 'value') else trade.transaction_type,
                     f"{trade.amount_usd:.2f}" if trade.amount_usd else '',
                     trade.quantity or '',
-                    f"{trade.price_per_share:.2f}" if trade.price_per_share else '',
+                    f"{trade.price:.2f}" if trade.price else '',
                     trade.source.value if hasattr(trade.source, 'value') else trade.source,
                     trade.filing_url or ''
                 ])
