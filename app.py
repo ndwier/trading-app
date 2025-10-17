@@ -838,6 +838,59 @@ def search():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/backtest/run')
+def run_backtest_api():
+    """Run backtest and return results."""
+    try:
+        from src.backtesting.advanced_backtest import AdvancedBacktester
+        
+        # Get parameters
+        days = request.args.get('days', 365, type=int)
+        end_date = datetime.now().strftime('%Y-%m-%d')
+        start_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+        
+        backtester = AdvancedBacktester(start_date=start_date, end_date=end_date)
+        results = backtester.run_all_strategies()
+        
+        # Convert results to JSON
+        json_results = {}
+        for name, result in results.items():
+            json_results[name] = {
+                'strategy_name': result.strategy_name,
+                'period': f"{result.start_date.date()} to {result.end_date.date()}",
+                'total_trades': result.total_trades,
+                'winning_trades': result.winning_trades,
+                'losing_trades': result.losing_trades,
+                'total_return': f"{result.total_return*100:.2f}%",
+                'total_return_pct': result.total_return * 100,
+                'sharpe_ratio': round(result.sharpe_ratio, 2),
+                'max_drawdown': f"{result.max_drawdown*100:.2f}%",
+                'win_rate': f"{result.win_rate*100:.1f}%",
+                'win_rate_pct': result.win_rate * 100,
+                'avg_win': f"{result.avg_win*100:.2f}%",
+                'avg_loss': f"{result.avg_loss*100:.2f}%",
+                'profit_factor': round(result.profit_factor, 2)
+            }
+        
+        # Find best strategy
+        best = max(results.values(), key=lambda r: r.sharpe_ratio) if results else None
+        
+        return jsonify({
+            'results': json_results,
+            'best_strategy': {
+                'name': best.strategy_name,
+                'sharpe_ratio': round(best.sharpe_ratio, 2),
+                'total_return': f"{best.total_return*100:.2f}%",
+                'win_rate': f"{best.win_rate*100:.1f}%"
+            } if best else None
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({'error': 'Not found'}), 404

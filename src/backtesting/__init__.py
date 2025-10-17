@@ -1,17 +1,7 @@
-"""Backtesting framework for trading strategies."""
+"""
+Advanced backtesting module with multiple alpha-generating strategies.
+"""
 
-from .base_strategy import BaseStrategy, StrategyResult
-from .lag_trade_strategy import LagTradeStrategy
-from .cluster_strategy import ClusterStrategy
-from .backtester import Backtester, BacktestResult
-from .performance_metrics import PerformanceCalculator
+from .advanced_backtest import AdvancedBacktester, BacktestResult, print_backtest_report
 
-__all__ = [
-    "BaseStrategy",
-    "StrategyResult", 
-    "LagTradeStrategy",
-    "ClusterStrategy",
-    "Backtester",
-    "BacktestResult",
-    "PerformanceCalculator"
-]
+__all__ = ['AdvancedBacktester', 'BacktestResult', 'print_backtest_report']
