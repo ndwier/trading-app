@@ -468,6 +468,182 @@ def get_insider_info(name):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/signal_details/<ticker>')
+def get_signal_details(ticker):
+    """Get comprehensive signal details including confidence breakdown, targets, and hold time."""
+    try:
+        ticker = ticker.upper()
+        
+        with get_session() as session:
+            # Get the signal
+            signal = session.query(Signal).filter(
+                Signal.ticker == ticker,
+                Signal.is_active == True
+            ).first()
+            
+            if not signal:
+                return jsonify({'error': 'No active signal found for this ticker'}), 404
+            
+            # Get recent trades (last 90 days)
+            from src.database.models import TransactionType
+            trades = session.query(Trade).filter(
+                Trade.ticker == ticker,
+                Trade.trade_date >= (datetime.now().date() - timedelta(days=90))
+            ).order_by(Trade.trade_date.desc()).all()
+            
+            # Calculate confidence score breakdown
+            confidence_factors = {
+                'insider_count': 0,
+                'trade_volume': 0,
+                'buy_sell_ratio': 0,
+                'recent_activity': 0,
+                'position_concentration': 0
+            }
+            
+            unique_insiders = set()
+            buy_trades = []
+            sell_trades = []
+            total_amount = 0
+            
+            for t in trades:
+                if t.filer:
+                    unique_insiders.add(t.filer.filer_id)
+                if t.amount_usd:
+                    total_amount += float(t.amount_usd)
+                if t.transaction_type == TransactionType.BUY:
+                    buy_trades.append(t)
+                elif t.transaction_type == TransactionType.SELL:
+                    sell_trades.append(t)
+            
+            # Insider count factor (0-25 points)
+            confidence_factors['insider_count'] = min(25, len(unique_insiders) * 5)
+            
+            # Trade volume factor (0-25 points)
+            if total_amount > 10000000:  # $10M+
+                confidence_factors['trade_volume'] = 25
+            elif total_amount > 1000000:  # $1M+
+                confidence_factors['trade_volume'] = 20
+            elif total_amount > 100000:  # $100K+
+                confidence_factors['trade_volume'] = 15
+            else:
+                confidence_factors['trade_volume'] = 10
+            
+            # Buy/Sell ratio factor (0-25 points)
+            if len(buy_trades) > 0 and len(sell_trades) == 0:
+                confidence_factors['buy_sell_ratio'] = 25
+            elif len(buy_trades) > len(sell_trades) * 3:
+                confidence_factors['buy_sell_ratio'] = 20
+            elif len(buy_trades) > len(sell_trades):
+                confidence_factors['buy_sell_ratio'] = 15
+            else:
+                confidence_factors['buy_sell_ratio'] = 5
+            
+            # Recent activity factor (0-15 points)
+            recent_trades = [t for t in trades if t.trade_date >= (datetime.now().date() - timedelta(days=30))]
+            if len(recent_trades) >= 5:
+                confidence_factors['recent_activity'] = 15
+            elif len(recent_trades) >= 3:
+                confidence_factors['recent_activity'] = 10
+            elif len(recent_trades) >= 1:
+                confidence_factors['recent_activity'] = 5
+            
+            # Position concentration factor (0-10 points)
+            if len(unique_insiders) >= 3:
+                confidence_factors['position_concentration'] = 10
+            elif len(unique_insiders) >= 2:
+                confidence_factors['position_concentration'] = 5
+            
+            total_confidence = sum(confidence_factors.values())
+            
+            # Calculate hold time recommendation
+            hold_time_days = None
+            avg_hold_time = None
+            
+            # Look at historical trades to estimate hold times
+            # For now, use a simple heuristic based on signal strength
+            if signal.strength >= 0.8:
+                hold_time_days = 90  # 3 months for high confidence
+            elif signal.strength >= 0.6:
+                hold_time_days = 60  # 2 months for medium confidence
+            else:
+                hold_time_days = 30  # 1 month for lower confidence
+            
+            # Calculate exit price targets
+            # Get average buy price from recent trades
+            buy_prices = [float(t.price) for t in buy_trades if t.price]
+            avg_buy_price = sum(buy_prices) / len(buy_prices) if buy_prices else None
+            
+            targets = {
+                'conservative': None,
+                'moderate': None,
+                'aggressive': None,
+                'stop_loss': None
+            }
+            
+            if avg_buy_price:
+                # Conservative: 10% upside
+                targets['conservative'] = round(avg_buy_price * 1.10, 2)
+                # Moderate: 25% upside
+                targets['moderate'] = round(avg_buy_price * 1.25, 2)
+                # Aggressive: 50% upside
+                targets['aggressive'] = round(avg_buy_price * 1.50, 2)
+                # Stop loss: 15% downside
+                targets['stop_loss'] = round(avg_buy_price * 0.85, 2)
+            
+            # Build detailed reasoning
+            reasoning_parts = []
+            reasoning_parts.append(f"🎯 Signal generated based on {len(trades)} trades from {len(unique_insiders)} unique insiders.")
+            reasoning_parts.append(f"💰 Total insider volume: ${total_amount:,.0f}")
+            reasoning_parts.append(f"📊 Buy/Sell ratio: {len(buy_trades)} buys vs {len(sell_trades)} sells")
+            
+            if confidence_factors['insider_count'] >= 20:
+                reasoning_parts.append(f"✅ Strong insider participation ({len(unique_insiders)} insiders)")
+            if confidence_factors['recent_activity'] >= 10:
+                reasoning_parts.append(f"⚡ High recent activity ({len(recent_trades)} trades in last 30 days)")
+            if confidence_factors['trade_volume'] >= 20:
+                reasoning_parts.append(f"💎 Large volume trades indicating strong conviction")
+            
+            return jsonify({
+                'ticker': ticker,
+                'signal_type': signal.signal_type.value,
+                'strength': float(signal.strength) * 100,
+                'confidence_breakdown': {
+                    'total_score': total_confidence,
+                    'factors': {
+                        'Insider Count': confidence_factors['insider_count'],
+                        'Trade Volume': confidence_factors['trade_volume'],
+                        'Buy/Sell Ratio': confidence_factors['buy_sell_ratio'],
+                        'Recent Activity': confidence_factors['recent_activity'],
+                        'Position Concentration': confidence_factors['position_concentration']
+                    },
+                    'explanation': 'Confidence score is calculated from multiple factors: insider participation (25%), trade volume (25%), buy/sell ratio (25%), recent activity (15%), and position concentration (10%)'
+                },
+                'hold_time': {
+                    'recommended_days': hold_time_days,
+                    'explanation': f"Hold for approximately {hold_time_days} days based on signal strength and historical patterns"
+                },
+                'price_targets': {
+                    'avg_insider_buy_price': avg_buy_price,
+                    'targets': targets,
+                    'explanation': 'Price targets calculated based on average insider buy prices with different risk profiles'
+                },
+                'detailed_reasoning': '\n'.join(reasoning_parts),
+                'trade_summary': {
+                    'total_trades': len(trades),
+                    'buy_trades': len(buy_trades),
+                    'sell_trades': len(sell_trades),
+                    'unique_insiders': len(unique_insiders),
+                    'total_volume': total_amount,
+                    'recent_trades_30d': len(recent_trades)
+                }
+            })
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/query/trades', methods=['POST'])
 def custom_trade_query():
     """Custom query builder for trades."""

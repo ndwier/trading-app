@@ -93,6 +93,25 @@
         </div>
     </div>
 
+    <!-- Details Modal -->
+    <div id="detailsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+         background: rgba(0,0,0,0.8); z-index: 9999; align-items: center; justify-content: center;
+         padding: 2rem; overflow-y: auto;" onclick="if(event.target === this) closeModal()">
+        <div style="background: var(--bg-secondary); border-radius: 16px; padding: 2rem; 
+             max-width: 900px; width: 100%; max-height: 90vh; overflow-y: auto; 
+             border: 1px solid var(--border-color); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0; font-size: 1.5rem;">Signal Details</h2>
+                <button onclick="closeModal()" style="background: none; border: none; color: var(--text-secondary); 
+                        font-size: 2rem; cursor: pointer; padding: 0; width: 40px; height: 40px; 
+                        display: flex; align-items: center; justify-content: center; border-radius: 8px; 
+                        transition: all 0.2s;" onmouseover="this.style.background='var(--bg-card)'; this.style.color='var(--text-primary)'" 
+                        onmouseout="this.style.background='none'; this.style.color='var(--text-secondary)'">×</button>
+            </div>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
     <script>
         // Global data
         let allSignals = [];
@@ -251,8 +270,136 @@
         }
 
         // View details
-        function viewDetails(ticker) {
-            window.open(`/api/insider_buys/${ticker}`, '_blank');
+        async function viewDetails(ticker) {
+            // Show modal with detailed information
+            const modal = document.getElementById('detailsModal');
+            const content = document.getElementById('modalContent');
+            
+            modal.style.display = 'flex';
+            content.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+            
+            try {
+                const response = await fetch(`/api/signal_details/${ticker}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    content.innerHTML = `<div style="color: var(--accent-red);">${data.error}</div>`;
+                    return;
+                }
+                
+                // Render comprehensive details
+                content.innerHTML = `
+                    <div style="max-width: 800px; margin: 0 auto;">
+                        <h2 style="margin: 0 0 1rem 0; font-size: 2rem; color: var(--text-primary);">
+                            ${data.ticker}
+                            <span style="color: var(--accent-green); font-size: 1.5rem; margin-left: 1rem;">
+                                ${data.strength.toFixed(0)}%
+                            </span>
+                        </h2>
+                        
+                        <div class="signal-type ${data.signal_type}" style="display: inline-block; margin-bottom: 1.5rem;">
+                            ${data.signal_type.toUpperCase()} SIGNAL
+                        </div>
+                        
+                        <!-- Detailed Reasoning -->
+                        <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
+                            <h3 style="margin: 0 0 1rem 0; font-size: 1.2rem; color: var(--accent-blue);">📋 Analysis</h3>
+                            <div style="line-height: 1.8; color: var(--text-secondary); white-space: pre-line;">
+                                ${data.detailed_reasoning}
+                            </div>
+                        </div>
+                        
+                        <!-- Confidence Breakdown -->
+                        <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
+                            <h3 style="margin: 0 0 1rem 0; font-size: 1.2rem; color: var(--accent-blue);">📊 Confidence Score Breakdown</h3>
+                            <div style="font-size: 2rem; font-weight: 700; color: var(--accent-green); margin-bottom: 1rem;">
+                                ${data.confidence_breakdown.total_score}/100
+                            </div>
+                            <div style="display: grid; gap: 0.75rem;">
+                                ${Object.entries(data.confidence_breakdown.factors).map(([name, score]) => `
+                                    <div>
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                            <span style="color: var(--text-secondary);">${name}</span>
+                                            <span style="color: var(--text-primary); font-weight: 600;">${score} pts</span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: ${(score/25)*100}%"></div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); font-size: 0.875rem; color: var(--text-secondary);">
+                                ${data.confidence_breakdown.explanation}
+                            </div>
+                        </div>
+                        
+                        <!-- Price Targets -->
+                        <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
+                            <h3 style="margin: 0 0 1rem 0; font-size: 1.2rem; color: var(--accent-blue);">🎯 Price Targets</h3>
+                            ${data.price_targets.avg_insider_buy_price ? `
+                                <div style="margin-bottom: 1.5rem;">
+                                    <div style="color: var(--text-secondary); font-size: 0.875rem;">Avg Insider Buy Price</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">
+                                        $${data.price_targets.avg_insider_buy_price.toFixed(2)}
+                                    </div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                                    <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
+                                        <div style="color: var(--text-secondary); font-size: 0.875rem;">🔒 Stop Loss</div>
+                                        <div style="font-size: 1.25rem; font-weight: 600; color: var(--accent-red);">
+                                            $${data.price_targets.targets.stop_loss}
+                                        </div>
+                                        <div style="color: var(--text-secondary); font-size: 0.75rem;">-15%</div>
+                                    </div>
+                                    <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
+                                        <div style="color: var(--text-secondary); font-size: 0.875rem;">🎯 Conservative</div>
+                                        <div style="font-size: 1.25rem; font-weight: 600; color: var(--accent-green);">
+                                            $${data.price_targets.targets.conservative}
+                                        </div>
+                                        <div style="color: var(--accent-green); font-size: 0.75rem;">+10%</div>
+                                    </div>
+                                    <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
+                                        <div style="color: var(--text-secondary); font-size: 0.875rem;">🎯 Moderate</div>
+                                        <div style="font-size: 1.25rem; font-weight: 600; color: var(--accent-green);">
+                                            $${data.price_targets.targets.moderate}
+                                        </div>
+                                        <div style="color: var(--accent-green); font-size: 0.75rem;">+25%</div>
+                                    </div>
+                                    <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
+                                        <div style="color: var(--text-secondary); font-size: 0.875rem;">🚀 Aggressive</div>
+                                        <div style="font-size: 1.25rem; font-weight: 600; color: var(--accent-purple);">
+                                            $${data.price_targets.targets.aggressive}
+                                        </div>
+                                        <div style="color: var(--accent-purple); font-size: 0.75rem;">+50%</div>
+                                    </div>
+                                </div>
+                            ` : '<div style="color: var(--text-secondary);">Price targets not available</div>'}
+                            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); font-size: 0.875rem; color: var(--text-secondary);">
+                                ${data.price_targets.explanation}
+                            </div>
+                        </div>
+                        
+                        <!-- Hold Time Recommendation -->
+                        <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                            <h3 style="margin: 0 0 1rem 0; font-size: 1.2rem; color: var(--accent-blue);">⏰ Hold Time Recommendation</h3>
+                            <div style="font-size: 2rem; font-weight: 700; color: var(--accent-yellow); margin-bottom: 0.5rem;">
+                                ${data.hold_time.recommended_days} days
+                            </div>
+                            <div style="color: var(--text-secondary);">
+                                ${data.hold_time.explanation}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error loading details:', error);
+                content.innerHTML = `<div style="color: var(--accent-red);">Failed to load details</div>`;
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('detailsModal').style.display = 'none';
         }
 
         // Add to watchlist (placeholder)
