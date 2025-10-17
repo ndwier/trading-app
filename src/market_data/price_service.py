@@ -34,6 +34,8 @@ class PriceService:
         try:
             stock = yf.Ticker(ticker)
             info = stock.info
+            
+            # Get recent data including today
             hist = stock.history(period='5d')
             
             if hist.empty:
@@ -41,12 +43,47 @@ class PriceService:
             
             current_price = float(hist['Close'].iloc[-1])
             
+            # Calculate change from previous close (most recent non-current day)
+            prev_close = current_price  # Default
+            change = 0
+            change_pct = 0
+            
+            if len(hist) >= 2:
+                prev_close = float(hist['Close'].iloc[-2])
+                change = current_price - prev_close
+                change_pct = (change / prev_close * 100) if prev_close != 0 else 0
+            
+            # Try to get intraday data if available
+            try:
+                # Get intraday data (1 day, 1 minute intervals)
+                intraday = stock.history(period='1d', interval='1m')
+                if not intraday.empty and len(intraday) > 0:
+                    # Use the most recent price from intraday
+                    current_price = float(intraday['Close'].iloc[-1])
+                    # Get today's open or use previous close
+                    open_price = float(intraday['Open'].iloc[0])
+                    if open_price > 0:
+                        # Calculate change from today's open
+                        change = current_price - open_price
+                        change_pct = (change / open_price * 100)
+            except:
+                # If intraday fails, stick with daily data
+                pass
+            
+            # Try to get proper previous close from info
+            if 'previousClose' in info and info['previousClose']:
+                prev_close = float(info['previousClose'])
+                change = current_price - prev_close
+                change_pct = (change / prev_close * 100) if prev_close != 0 else 0
+            
             data = {
                 'ticker': ticker,
                 'current_price': current_price,
-                'prev_close': float(hist['Close'].iloc[-2]) if len(hist) > 1 else current_price,
-                'change': current_price - float(hist['Close'].iloc[-2]) if len(hist) > 1 else 0,
-                'change_pct': ((current_price - float(hist['Close'].iloc[-2])) / float(hist['Close'].iloc[-2]) * 100) if len(hist) > 1 else 0,
+                'price': current_price,  # Alias for compatibility
+                'prev_close': prev_close,
+                'change': round(change, 2),
+                'change_percent': round(change_pct, 2),  # Fixed field name
+                'change_pct': round(change_pct, 2),  # Keep old name for compatibility
                 'volume': int(hist['Volume'].iloc[-1]) if 'Volume' in hist else 0,
                 'market_cap': info.get('marketCap', 0),
                 'timestamp': datetime.now().isoformat()
