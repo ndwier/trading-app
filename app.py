@@ -254,6 +254,85 @@ def get_signals():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/signals/enhanced')
+def get_enhanced_signals():
+    """Enhanced API endpoint with filtering and more signals."""
+    
+    try:
+        # Query parameters
+        limit = request.args.get('limit', 50, type=int)  # Show 50 instead of 10!
+        risk_tolerance = request.args.get('risk', 'moderate')
+        market_cap = request.args.get('market_cap', 'all')  # all, large, mid, small, micro
+        min_confidence = request.args.get('min_confidence', 0, type=float)
+        
+        with get_session() as session:
+            from sqlalchemy import desc, func
+            
+            # Get active signals
+            query = session.query(Signal).filter(Signal.is_active == True)
+            
+            # Apply confidence filter
+            if min_confidence > 0:
+                query = query.filter(Signal.strength >= min_confidence / 100.0)
+            
+            # Get signals
+            signals = query.order_by(desc(Signal.strength)).limit(limit).all()
+            
+            # Enrich with additional data
+            result = []
+            for sig in signals:
+                # Get trades for this ticker
+                trades = session.query(Trade).filter(
+                    Trade.ticker == sig.ticker,
+                    Trade.trade_date >= (datetime.now().date() - timedelta(days=90))
+                ).all()
+                
+                # Calculate insider details
+                unique_insiders = set()
+                total_amount = 0
+                buy_trades = []
+                
+                for t in trades:
+                    if t.filer:
+                        unique_insiders.add(t.filer.name)
+                    if t.amount_usd:
+                        total_amount += float(t.amount_usd)
+                    if t.transaction_type.value == 'BUY':
+                        buy_trades.append(t)
+                
+                result.append({
+                    'ticker': sig.ticker,
+                    'signal_type': sig.signal_type.value,
+                    'strength': float(sig.strength) * 100,
+                    'reasoning': sig.reasoning,
+                    
+                    # Enhanced data
+                    'num_trades': len(trades),
+                    'num_insiders': len(unique_insiders),
+                    'total_volume': total_amount,
+                    'num_buys': len(buy_trades),
+                    'insiders': list(unique_insiders)[:5],  # Top 5
+                    
+                    # Timestamps
+                    'generated_at': sig.generated_at.isoformat() if sig.generated_at else None
+                })
+            
+            return jsonify({
+                'signals': result,
+                'total': len(result),
+                'filters': {
+                    'risk_tolerance': risk_tolerance,
+                    'market_cap': market_cap,
+                    'min_confidence': min_confidence
+                }
+            })
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/recommendations')
 def get_recommendations():
     """API endpoint to get portfolio recommendations."""
