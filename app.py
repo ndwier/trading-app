@@ -1460,6 +1460,51 @@ def paper_trade_history():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/alerts/test', methods=['POST'])
+def test_alert():
+    """Test alert system."""
+    try:
+        from src.alerts import AlertSystem
+        
+        data = request.get_json() or {}
+        alert_type = data.get('type', 'email')
+        
+        test_signal = {
+            'ticker': 'TEST',
+            'confidence': 95.0,
+            'type': 'BUY',
+            'reasoning': 'This is a test alert from the Insider Intelligence Platform.',
+            'num_insiders': 1,
+            'total_volume': 100000
+        }
+        
+        alert_system = AlertSystem()
+        result = alert_system.send_signal_alert(test_signal, alert_type)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/alerts/check', methods=['POST'])
+def check_alerts():
+    """Check for high-confidence signals and send alerts."""
+    try:
+        from src.alerts import check_and_send_alerts
+        
+        result = check_and_send_alerts()
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/paper/reset', methods=['POST'])
 def paper_reset_portfolio():
     """Reset paper trading portfolio."""
